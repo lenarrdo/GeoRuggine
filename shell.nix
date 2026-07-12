@@ -31,8 +31,8 @@ pkgs.mkShell {
     webkitgtk_4_1
   ];
 
-  # Needed on Wayland to report the correct display scale
   shellHook = ''
     export XDG_DATA_DIRS="$GSETTINGS_SCHEMAS_PATH"
+    export WEBKIT_DISABLE_DMABUF_RENDERER=1
   '';
 }
