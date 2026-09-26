@@ -121,7 +121,7 @@ la dimensione del file eseguibile prodotto.
 ## Diagramma di Contesto
 
 
-![[image/CD.png]]
+![Diagramma di Contesto](image/CD.png)
 
 
 ## Tabella delle Interfacce per il sistema **GeoRuggine**
@@ -374,4 +374,4 @@ la dimensione del file eseguibile prodotto.
 | **3**     | Il server formatta i valori registrati associandoli alla marca temporale     |
 | **4**     | Il server scrive e salva la riga nel file di log dedicato                    |
 
-![[image/useCases.png]]
+![Diagramma dei Casi d'Uso](image/useCases.png)
