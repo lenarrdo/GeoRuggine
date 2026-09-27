@@ -1,0 +1,5 @@
+# ignore drawio backup files
+*.bkp
+
+# ignore database (for now)
+*.sqlite
