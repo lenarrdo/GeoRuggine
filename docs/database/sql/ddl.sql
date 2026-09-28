@@ -20,15 +20,17 @@ CREATE TABLE messages (
     receiver_id INTEGER NOT NULL,
     timestamp DATETIME NOT NULL,
     contents TEXT,
-    FOREIGN KEY(sender_id) REFERENCES users(id)
+    FOREIGN KEY(sender_id) REFERENCES users(id),
     FOREIGN KEY(receiver_id) REFERENCES users(id)
 );
 
 CREATE TABLE positions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
     x_coord INTEGER NOT NULL,
     y_coord INTEGER NOT NULL,
-    timestamp DATETIME NOT NULL
+    timestamp DATETIME NOT NULL,
+    FOREIGN KEY(user_id) REFERENCES users(id)
 );
 
 COMMIT;
