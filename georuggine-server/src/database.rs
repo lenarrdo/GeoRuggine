@@ -37,8 +37,7 @@ pub async fn init(reset_tables: bool) -> Result<Pool<Sqlite>, Box<dyn std::error
         "CREATE TABLE IF NOT EXISTS users (
              id INTEGER PRIMARY KEY,
              username TEXT UNIQUE NOT NULL,
-             password_hash TEXT NOT NULL,
-             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+             password_hash TEXT NOT NULL
          );",
     )
     .execute(&mut *tx)
