@@ -8,14 +8,14 @@ DROP TABLE IF EXISTS messages;
 DROP TABLE IF EXISTS positions;
 
 CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY,
     username TEXT NOT NULL,
-    hash TEXT NOT NULL,
-    salt TEXT NOT NULL
+    password_hash TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE messages (
-    message_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    message_id INTEGER PRIMARY KEY,
     sender_id INTEGER NOT NULL,
     receiver_id INTEGER NOT NULL,
     timestamp DATETIME NOT NULL,
@@ -25,7 +25,7 @@ CREATE TABLE messages (
 );
 
 CREATE TABLE positions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY,
     user_id INTEGER NOT NULL,
     x_coord INTEGER NOT NULL,
     y_coord INTEGER NOT NULL,

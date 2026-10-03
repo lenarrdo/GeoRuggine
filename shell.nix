@@ -14,6 +14,9 @@ pkgs.mkShell {
     sqlite
     sleek
 
+    # API Testing
+    hurl
+
     # Rust
     rustc
     cargo

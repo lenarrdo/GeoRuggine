@@ -1,10 +1,13 @@
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
+use sqlx::{
+    Pool, Sqlite,
+    sqlite::{SqliteConnectOptions, SqlitePoolOptions},
+};
 use std::{fs, path::Path, str::FromStr};
 
 const DATA_DIR: &str = "data";
 const DB_NAME: &str = "georust.sqlite";
 
-pub async fn init(reset_tables: bool) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn init(reset_tables: bool) -> Result<Pool<Sqlite>, Box<dyn std::error::Error>> {
     fs::create_dir_all(DATA_DIR)?;
     let db_path = Path::new(DATA_DIR).join(DB_NAME);
     let options = SqliteConnectOptions::from_str(&format!("sqlite://{}", db_path.display()))?
@@ -32,10 +35,10 @@ pub async fn init(reset_tables: bool) -> Result<(), Box<dyn std::error::Error>> 
 
     sqlx::query(
         "CREATE TABLE IF NOT EXISTS users (
-             id INTEGER PRIMARY KEY AUTOINCREMENT,
+             id INTEGER PRIMARY KEY,
              username TEXT UNIQUE NOT NULL,
-             hash TEXT NOT NULL,
-             salt TEXT NOT NULL
+             password_hash TEXT NOT NULL,
+             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
          );",
     )
     .execute(&mut *tx)
@@ -43,7 +46,7 @@ pub async fn init(reset_tables: bool) -> Result<(), Box<dyn std::error::Error>> 
 
     sqlx::query(
         "CREATE TABLE positions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id INTEGER PRIMARY KEY,
             user_id INTEGER NOT NULL,
             x_coord INTEGER NOT NULL,
             y_coord INTEGER NOT NULL,
@@ -56,7 +59,7 @@ pub async fn init(reset_tables: bool) -> Result<(), Box<dyn std::error::Error>> 
 
     sqlx::query(
         "CREATE TABLE messages (
-            message_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            message_id INTEGER PRIMARY KEY,
             sender_id INTEGER NOT NULL,
             receiver_id INTEGER NOT NULL,
             timestamp DATETIME NOT NULL,
@@ -70,5 +73,5 @@ pub async fn init(reset_tables: bool) -> Result<(), Box<dyn std::error::Error>> 
 
     tx.commit().await?;
 
-    Ok(())
+    Ok(pool)
 }
