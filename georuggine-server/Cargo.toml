@@ -15,7 +15,7 @@ argon2 = "0.6.0"
 password-hash = "0.6.1"
 
 # authentication
-jsonwebtoken = "11"
+jsonwebtoken = { version = "11", features = ["aws_lc_rs"] }
 
 # serialization
 serde = { version = "1.0", features = ["derive"] }

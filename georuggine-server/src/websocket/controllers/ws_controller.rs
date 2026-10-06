@@ -1,35 +1,63 @@
+use crate::auth::services::token_service;
 use crate::messages::{ChatMessage, ClientIncomingMessage};
+use crate::websocket::WsResponse;
 use crate::websocket::api::dto::{Clients, ConnectedClient};
 use axum::{
+    Json,
     extract::{
-        State,
+        Query, State,
         connect_info::ConnectInfo,
         ws::{Message, WebSocket, WebSocketUpgrade},
     },
+    http::StatusCode,
     response::IntoResponse,
 };
-use axum_extra::TypedHeader;
 use futures_util::{sink::SinkExt, stream::StreamExt};
+use serde::Deserialize;
 use std::sync::Arc;
 use std::{net::SocketAddr, ops::ControlFlow};
 use tokio::sync::mpsc;
 
+#[derive(Deserialize)]
+pub struct WsParams {
+    token: String,
+}
+
 /// Handler HTTP iniziale per la rotta WebSocket (es. `GET {BASE_URL}/ws`).
 pub async fn ws_handler(
     ws: WebSocketUpgrade,
-    user_agent: Option<TypedHeader<headers::UserAgent>>,
+    Query(params): Query<WsParams>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     State(clients): State<Clients>,
-) -> impl IntoResponse {
-    let user_agent = if let Some(TypedHeader(user_agent)) = user_agent {
-        user_agent.to_string()
-    } else {
-        String::from("Unknown browser")
-    };
+) -> Result<impl IntoResponse, (StatusCode, Json<WsResponse>)> {
+    let claims = token_service::validate_jwt(&params.token).map_err(|_| {
+        (
+            StatusCode::UNAUTHORIZED,
+            Json(WsResponse {
+                message: "WebSockets can be only opened by authorized users.".to_string(),
+            }),
+        )
+    })?;
 
-    println!("`{user_agent}` at {addr} connected.");
+    // Attualmente non funziona perché il controllo viene fatto su indirizzo:porta (e quando viene
+    // aperto un nuovo socket, la porta cambia).
+    // Comunque non so nemmeno se sia un check necessario: magari ha senso che un utente loggato
+    // possa aprire più socket. TODO: chiarire
+    {
+        let guard = clients.read().await;
+        if guard.contains_key(&addr) {
+            return Err((
+                StatusCode::FORBIDDEN,
+                Json(WsResponse {
+                    message: "Users can open only one WebSocket at a time.".to_string(),
+                }),
+            ));
+        }
+    }
 
-    ws.on_upgrade(move |socket| handle_socket(socket, addr, clients))
+    println!("{}@{} connected.", claims.username, addr);
+
+    Ok(ws.on_upgrade(move |socket| handle_socket(socket, addr, clients)))
 }
 
 /// Gestisce l'intero ciclo di vita di una singola connessione WebSocket attiva.
