@@ -10,6 +10,7 @@ use axum::{
 };
 use axum_extra::TypedHeader;
 use futures_util::{sink::SinkExt, stream::StreamExt};
+use std::sync::Arc;
 use std::{net::SocketAddr, ops::ControlFlow};
 use tokio::sync::mpsc;
 
@@ -51,7 +52,7 @@ pub async fn handle_socket(socket: WebSocket, who: SocketAddr, clients: Clients)
         }
     });
 
-    let clients_clone = clients.clone();
+    let clients_clone = Arc::clone(&clients);
     let mut recv_task = tokio::spawn(async move {
         let mut cnt = 0;
 
@@ -87,7 +88,7 @@ pub async fn handle_socket(socket: WebSocket, who: SocketAddr, clients: Clients)
         println!("Client {who} disconnesso (rimanenti: {})", guard.len());
     }
 
-    println!("Websocket context {who} destroyed");
+    println!("WebSocket context {who} destroyed");
 }
 
 /// Elabora i singoli messaggi ricevuti dal client via WebSocket.
