@@ -1,11 +1,7 @@
 use crate::auth::api::dto::{AuthRequest, AuthResponse};
 use crate::auth::services::auth_service::{AuthService, LoginError, RegisterError};
-use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use sqlx::SqlitePool;
-
-pub async fn todo_route() -> &'static str {
-    "TODO"
-}
 
 pub async fn handle_registration(
     State(db_pool): State<SqlitePool>,
@@ -90,4 +86,8 @@ pub async fn handle_login(
             }),
         )),
     }
+}
+
+pub async fn handle_logout() -> &'static str {
+    "TODO: logout user."
 }

@@ -1,5 +1,5 @@
 use crate::auth::repository::user_repository::UserRepository;
-use argon2::{password_hash::PasswordVerifier, Argon2, PasswordHasher};
+use argon2::{Argon2, PasswordHasher, password_hash::PasswordVerifier};
 use password_hash::phc::PasswordHash;
 use sqlx::SqlitePool;
 

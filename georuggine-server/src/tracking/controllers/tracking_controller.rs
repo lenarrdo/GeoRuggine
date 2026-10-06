@@ -1,6 +1,6 @@
 use crate::tracking::api::dto::PositionUpdate;
 use crate::tracking::services::tracking_service::TrackingService;
-use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use sqlx::SqlitePool;
 
 #[allow(dead_code)]

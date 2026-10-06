@@ -2,9 +2,9 @@ use crate::messages::{ChatMessage, ClientIncomingMessage};
 use crate::websocket::api::dto::{Clients, ConnectedClient};
 use axum::{
     extract::{
+        State,
         connect_info::ConnectInfo,
         ws::{Message, WebSocket, WebSocketUpgrade},
-        State,
     },
     response::IntoResponse,
 };
@@ -13,7 +13,7 @@ use futures_util::{sink::SinkExt, stream::StreamExt};
 use std::{net::SocketAddr, ops::ControlFlow};
 use tokio::sync::mpsc;
 
-/// Handler HTTP iniziale per la rotta WebSocket (es. `GET /ws`).
+/// Handler HTTP iniziale per la rotta WebSocket (es. `GET {BASE_URL}/ws`).
 pub async fn ws_handler(
     ws: WebSocketUpgrade,
     user_agent: Option<TypedHeader<headers::UserAgent>>,
@@ -38,13 +38,7 @@ pub async fn handle_socket(socket: WebSocket, who: SocketAddr, clients: Clients)
 
     {
         let mut guard = clients.write().await;
-        guard.insert(
-            who,
-            ConnectedClient {
-                user_id: None,
-                tx,
-            },
-        );
+        guard.insert(who, ConnectedClient { user_id: None, tx });
         println!("Client {who} connesso (totale attivi: {})", guard.len());
     }
 
