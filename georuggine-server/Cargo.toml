@@ -7,6 +7,8 @@ edition = "2024"
 # client-server interaction
 tokio = { version = "1.53.1", features = ["full"] }
 axum = { version = "0.8.9", features = ["ws"] }
+axum-extra = { version = "0.12.6", features = ["typed-header"] }
+futures-util = { version = "0.3.34", features = ["sink"] }
 tower-http = { version = "0.7.1", features = ["cors"] }
 
 # database
@@ -20,10 +22,13 @@ jsonwebtoken = { version = "11", features = ["aws_lc_rs"] }
 # serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-futures-util = { version = "0.3.34", features = ["sink"] }
-axum-extra = { version = "0.12.6", features = ["typed-header"] }
-headers = "0.4.2"
+
+# misc
 chrono = { version = "0.4.45", features = ["serde"] }
+
+# tui
+ratatui = "0.30.2"
+crossterm = "0.29.0"
 
 [dev-dependencies]
 tokio-tungstenite = "0.30.0"
