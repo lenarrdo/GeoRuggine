@@ -1,20 +1,24 @@
-use crate::models::{ClientIncomingMessage, UserSession};
+use crate::auth::domain::session::UserSession;
+use crate::websocket::api::dto::ClientIncomingMessage;
 use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc;
 use tokio::task::AbortHandle;
 
+type WsTx = Arc<Mutex<Option<mpsc::UnboundedSender<ClientIncomingMessage>>>>;
+type Handle = Arc<Mutex<Option<AbortHandle>>>;
+type Session = Arc<Mutex<Option<UserSession>>>;
+
+
 /// Stato condiviso thread-safe dell'applicazione client
 #[derive(Default, Clone)]
 pub struct AppState {
-    pub session: Arc<Mutex<Option<UserSession>>>,
-
+    pub session: Session,
     // Canale MPSC condiviso tra i produttori (UI e Tracking) e il consumatore (Task 1 sul Web)
-    pub ws_tx: Arc<Mutex<Option<mpsc::UnboundedSender<ClientIncomingMessage>>>>,
-
+    pub ws_tx: WsTx,
     // Handle dei task per distruzione immediata alla chiusura
-    pub tracking_abort: Arc<Mutex<Option<AbortHandle>>>,
-    pub send_abort: Arc<Mutex<Option<AbortHandle>>>,
-    pub recv_abort: Arc<Mutex<Option<AbortHandle>>>,
+    pub tracking_abort: Handle,
+    pub send_abort: Handle,
+    pub recv_abort: Handle,
 }
 
 impl AppState {

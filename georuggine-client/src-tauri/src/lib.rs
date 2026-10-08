@@ -1,8 +1,8 @@
 pub mod auth;
-pub mod models;
+pub mod messages;
 pub mod state;
 pub mod tracking;
-pub mod ws;
+pub mod websocket;
 
 use state::AppState;
 use tauri::Manager;
@@ -34,7 +34,7 @@ pub fn run() {
             auth::logout,
             auth::get_current_user,
             // Produttore 1 (UI): invio messaggi di chat
-            ws::send_chat_message,
+            messages::send_chat_message,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
