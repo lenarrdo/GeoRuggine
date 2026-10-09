@@ -7,7 +7,7 @@ const TOKEN_DURATION_HRS: i64 = 24;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: String,
+    pub user_id: i64,
     pub username: String,
     pub exp: usize,
     pub iat: usize,
@@ -18,7 +18,7 @@ pub fn generate_jwt(user_id: i64, username: &str) -> Result<String, jsonwebtoken
     let expire = now + Duration::hours(TOKEN_DURATION_HRS);
 
     let claims = Claims {
-        sub: user_id.to_string(),
+        user_id,
         username: username.to_string(),
         iat: now.timestamp() as usize,
         exp: expire.timestamp() as usize,

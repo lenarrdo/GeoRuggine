@@ -14,7 +14,6 @@ use axum::{
 };
 use futures_util::{sink::SinkExt, stream::StreamExt};
 use serde::Deserialize;
-use std::sync::Arc;
 use std::{net::SocketAddr, ops::ControlFlow};
 use tokio::sync::mpsc;
 
@@ -39,13 +38,9 @@ pub async fn ws_handler(
         )
     })?;
 
-    // Attualmente non funziona perché il controllo viene fatto su indirizzo:porta (e quando viene
-    // aperto un nuovo socket, la porta cambia).
-    // Comunque non so nemmeno se sia un check necessario: magari ha senso che un utente loggato
-    // possa aprire più socket. TODO: chiarire
     {
         let guard = clients.read().await;
-        if guard.contains_key(&addr) {
+        if guard.contains_key(&claims.user_id) {
             return Err((
                 StatusCode::FORBIDDEN,
                 Json(WsResponse {
@@ -57,18 +52,18 @@ pub async fn ws_handler(
 
     println!("{}@{} connected.", claims.username, addr);
 
-    Ok(ws.on_upgrade(move |socket| handle_socket(socket, addr, clients)))
+    Ok(ws.on_upgrade(move |socket| handle_socket(socket, claims.user_id, clients)))
 }
 
 /// Gestisce l'intero ciclo di vita di una singola connessione WebSocket attiva.
-pub async fn handle_socket(socket: WebSocket, who: SocketAddr, clients: Clients) {
+pub async fn handle_socket(socket: WebSocket, user_id: i64, clients: Clients) {
     let (mut ws_sender, mut ws_receiver) = socket.split();
     let (tx, mut rx) = mpsc::unbounded_channel::<ChatMessage>();
 
     {
         let mut guard = clients.write().await;
-        guard.insert(who, ConnectedClient { user_id: None, tx });
-        println!("Client {who} connesso (totale attivi: {})", guard.len());
+        guard.insert(user_id, ConnectedClient { tx });
+        println!("Client {user_id} connesso (totale attivi: {})", guard.len());
     }
 
     let mut send_task = tokio::spawn(async move {
@@ -80,13 +75,12 @@ pub async fn handle_socket(socket: WebSocket, who: SocketAddr, clients: Clients)
         }
     });
 
-    let clients_clone = Arc::clone(&clients);
     let mut recv_task = tokio::spawn(async move {
         let mut cnt = 0;
 
         while let Some(Ok(msg)) = ws_receiver.next().await {
             cnt += 1;
-            if process_message(msg, who, &clients_clone).await.is_break() {
+            if process_message(msg, user_id).await.is_break() {
                 break;
             }
         }
@@ -97,14 +91,14 @@ pub async fn handle_socket(socket: WebSocket, who: SocketAddr, clients: Clients)
     tokio::select! {
         rv_a = (&mut send_task) => {
             if let Err(e) = rv_a {
-                eprintln!("Errore send_task per {who}: {e:?}");
+                eprintln!("Errore send_task per {user_id}: {e:?}");
             }
             recv_task.abort();
         }
 
         rv_b = (&mut recv_task) => {
             if let Err(e) = rv_b {
-                eprintln!("Errore recv_task per {who}: {e:?}");
+                eprintln!("Errore recv_task per {user_id}: {e:?}");
             }
             send_task.abort();
         }
@@ -112,69 +106,55 @@ pub async fn handle_socket(socket: WebSocket, who: SocketAddr, clients: Clients)
 
     {
         let mut guard = clients.write().await;
-        guard.remove(&who);
-        println!("Client {who} disconnesso (rimanenti: {})", guard.len());
+        guard.remove(&user_id);
+        println!("Client {user_id} disconnesso (rimanenti: {})", guard.len());
     }
 
-    println!("WebSocket context {who} destroyed");
+    println!("WebSocket context {user_id} destroyed");
 }
 
 /// Elabora i singoli messaggi ricevuti dal client via WebSocket.
-pub async fn process_message(
-    msg: Message,
-    who: SocketAddr,
-    clients: &Clients,
-) -> ControlFlow<(), ()> {
+pub async fn process_message(msg: Message, user_id: i64) -> ControlFlow<(), ()> {
     match msg {
         Message::Text(t) => {
             if let Ok(incoming) = serde_json::from_str::<ClientIncomingMessage>(&t) {
                 match incoming {
                     ClientIncomingMessage::Position(pos) => {
                         println!(
-                            ">>> [COORDINATE DA CLIENT] Da {who} (User {}): x={}, y={}, time={}",
-                            pos.user_id, pos.x_coord, pos.y_coord, pos.timestamp
+                            ">>> [COORDINATE DA CLIENT] Da user_id {user_id}: x={}, y={}, time={}",
+                            pos.x_coord, pos.y_coord, pos.timestamp
                         );
-
-                        let mut guard = clients.write().await;
-                        if let Some(client) = guard.get_mut(&who) {
-                            client.user_id = Some(pos.user_id);
-                        }
                     }
                     ClientIncomingMessage::Chat(chat_msg) => {
                         println!(
-                            ">>> [MESSAGGIO AL SERVER] Da {who} (User {}): `{}`",
+                            ">>> [MESSAGGIO AL SERVER] Da user_id {user_id} (User {}): `{}`",
                             chat_msg.sender_id, chat_msg.contents
                         );
-
-                        let mut guard = clients.write().await;
-                        if let Some(client) = guard.get_mut(&who) {
-                            client.user_id = Some(chat_msg.sender_id);
-                        }
                     }
                 }
             } else {
-                println!(">>> {who} ha inviato testo generico non strutturato: {t:?}");
+                println!(">>> {user_id} ha inviato testo generico non strutturato: {t:?}");
             }
         }
         Message::Binary(d) => {
-            println!(">>> {who} ha inviato {} bytes binari: {d:?}", d.len());
+            println!(">>> {user_id} ha inviato {} bytes binari: {d:?}", d.len());
         }
         Message::Close(c) => {
             if let Some(cf) = c {
                 println!(
-                    ">>> {who} ha inviato chiusura socket code={} reason=`{}`",
+                    ">>> {user_id} ha inviato chiusura socket code={} reason=`{}`",
                     cf.code, cf.reason
                 );
             } else {
-                println!(">>> {who} ha chiuso la connessione");
+                println!(">>> {user_id} ha chiuso la connessione");
             }
             return ControlFlow::Break(());
         }
         Message::Pong(v) => {
-            println!(">>> {who} ha risposto con pong {v:?}");
+            println!(">>> {user_id} ha risposto con pong {v:?}");
         }
         Message::Ping(v) => {
-            println!(">>> {who} ha inviato ping {v:?}");
+            println!(">>> {user_id} ha inviato ping {v:?}");
         }
     }
 
