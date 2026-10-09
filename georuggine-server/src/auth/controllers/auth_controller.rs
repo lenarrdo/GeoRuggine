@@ -87,7 +87,3 @@ pub async fn handle_login(
         )),
     }
 }
-
-pub async fn handle_logout() -> &'static str {
-    "TODO: logout user."
-}
