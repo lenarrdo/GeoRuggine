@@ -14,15 +14,16 @@ impl WsService {
     pub async fn connect_ws_internal(
         app_handle: &tauri::AppHandle,
         state: &AppState,
-        _token: &str,
+        token: &str,
     ) -> Result<(), String> {
         // Chiudi preventivamente eventuali sessioni aperte
         state.disconnect_ws();
 
-        // 1. Connessione fisica WebSocket al server remoto
-        let (ws_stream, _) = connect_async(WS_URL)
+        // 1. Connessione fisica WebSocket al server remoto passando il token JWT
+        let ws_endpoint = format!("{WS_URL}?token={token}");
+        let (ws_stream, _) = connect_async(&ws_endpoint)
             .await
-            .map_err(|e| format!("Connessione WebSocket fallita verso {WS_URL}: {e}"))?;
+            .map_err(|e| format!("Connessione WebSocket fallita verso {ws_endpoint}: {e}"))?;
 
         let (mut ws_sink, mut ws_stream) = ws_stream.split();
 

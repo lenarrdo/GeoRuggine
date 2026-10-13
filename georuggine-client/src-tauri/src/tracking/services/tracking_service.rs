@@ -36,7 +36,6 @@ impl TrackingService {
                 index += 1;
 
                 let pos = PositionUpdate {
-                    user_id,
                     x_coord: x,
                     y_coord: y,
                     timestamp: Utc::now().to_rfc3339(),
