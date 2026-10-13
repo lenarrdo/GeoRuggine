@@ -8,6 +8,7 @@ pub struct PositionRepository;
 impl PositionRepository {
     pub async fn save_position(
         db_pool: &SqlitePool,
+<<<<<<< HEAD
         pos: &PositionUpdate,
     ) -> Result<(), sqlx::Error> {
         sqlx::query("INSERT INTO positions (user_id, x_coord, y_coord, timestamp) VALUES (?, ?, ?, ?);")
@@ -17,6 +18,20 @@ impl PositionRepository {
             .bind(&pos.timestamp)
             .execute(db_pool)
             .await?;
+=======
+        user_id: i64,
+        pos: &PositionUpdate,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            "INSERT INTO positions (user_id, x_coord, y_coord, timestamp) VALUES (?, ?, ?, ?);",
+        )
+        .bind(user_id)
+        .bind(pos.x_coord)
+        .bind(pos.y_coord)
+        .bind(&pos.timestamp)
+        .execute(db_pool)
+        .await?;
+>>>>>>> 204584b9c90538055304bba7dbc776e049566d84
 
         Ok(())
     }

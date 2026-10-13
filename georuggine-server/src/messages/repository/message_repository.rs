@@ -7,10 +7,14 @@ pub struct MessageRepository;
 
 #[allow(dead_code)]
 impl MessageRepository {
+<<<<<<< HEAD
     pub async fn save_message(
         db_pool: &SqlitePool,
         msg: &ChatMessage,
     ) -> Result<(), sqlx::Error> {
+=======
+    pub async fn save_message(db_pool: &SqlitePool, msg: &ChatMessage) -> Result<(), sqlx::Error> {
+>>>>>>> 204584b9c90538055304bba7dbc776e049566d84
         let receiver = msg.receiver_id.unwrap_or(0);
         sqlx::query("INSERT INTO messages (sender_id, receiver_id, timestamp, contents) VALUES (?, ?, ?, ?);")
             .bind(msg.sender_id)
