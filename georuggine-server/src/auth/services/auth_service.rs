@@ -1,10 +1,5 @@
-<<<<<<< HEAD
-use crate::auth::repository::user_repository::UserRepository;
-use argon2::{password_hash::PasswordVerifier, Argon2, PasswordHasher};
-=======
 use crate::auth::{repository::user_repository::UserRepository, services::token_service};
 use argon2::{Argon2, PasswordHasher, password_hash::PasswordVerifier};
->>>>>>> 204584b9c90538055304bba7dbc776e049566d84
 use password_hash::phc::PasswordHash;
 use sqlx::SqlitePool;
 
@@ -82,16 +77,12 @@ impl AuthService {
         })?;
 
         match Argon2::default().verify_password(password.as_bytes(), &parsed_hash) {
-<<<<<<< HEAD
-            Ok(_) => Ok("MOCK_JWT_TOKEN".to_string()),
-=======
             Ok(_) => {
                 let token = token_service::generate_jwt(user.id, username).map_err(|_| {
                     LoginError::InternalError("Couldn't Generate Token.".to_string())
                 })?;
                 Ok(token)
             }
->>>>>>> 204584b9c90538055304bba7dbc776e049566d84
             Err(password_hash::Error::PasswordInvalid) => Err(LoginError::InvalidCredentials),
             Err(e) => Err(LoginError::InternalError(e.to_string())),
         }

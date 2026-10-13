@@ -4,21 +4,12 @@ pub mod messages;
 pub mod tracking;
 pub mod websocket;
 
-<<<<<<< HEAD
-use crate::auth::{handle_login, handle_registration, todo_route};
-use crate::websocket::ws_handler;
-use axum::{
-    extract::FromRef,
-    routing::{any, delete, get, post},
-    Router,
-=======
 use crate::auth::{handle_login, handle_registration};
 use crate::websocket::ws_handler;
 use axum::{
     Router,
     extract::FromRef,
     routing::{get, post},
->>>>>>> 204584b9c90538055304bba7dbc776e049566d84
 };
 use sqlx::SqlitePool;
 
@@ -56,13 +47,6 @@ pub fn create_app(db_pool: SqlitePool, clients: websocket::Clients) -> Router {
             post(handle_registration),
         )
         .route(&format!("{BASE_URL}/auth/login"), post(handle_login))
-<<<<<<< HEAD
-        .route(&format!("{BASE_URL}/auth/session"), get(todo_route))
-        .route(&format!("{BASE_URL}/auth/session"), delete(todo_route))
-        .route("/ws", any(ws_handler))
-        .route(&format!("{BASE_URL}/ws"), any(ws_handler))
-=======
         .route(&format!("{BASE_URL}/ws"), get(ws_handler))
->>>>>>> 204584b9c90538055304bba7dbc776e049566d84
         .with_state(app_state)
 }

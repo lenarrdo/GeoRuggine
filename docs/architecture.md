@@ -233,7 +233,6 @@ sequenceDiagram
 1. **Non bypassare il Dominio con i DTO:** I repository e i servizi non devono accettare DTO di rete per operazioni interne; i DTO vanno convertiti in entità di dominio (`Position`, `User`, `Message`) all'ingresso.
 2. **Nessuna dipendenza circolare:** Un modulo può dipendere dall'interfaccia `/api` di un altro modulo, ma mai dai suoi file interni `/domain`, `/services` o `/repository`.
 3. **Persistenza sicura:** Qualsiasi messaggio o stato di telemetria inviato in broadcast o in real-time deve essere storicizzato nel repository appropriato prima o contestualmente alla trasmissione di rete.
-<<<<<<< HEAD
 
 
 ---
@@ -269,5 +268,3 @@ Ogni dominio applicativo (`auth`, `messages`, `tracking`, `websocket`) rispetta 
    - `CoordinateRepository`: ricerca dinamica, parsing e fallback delle coordinate da file locali (`coordinates.json`, `positions.json`, `coordinates.csv`).
 5. **`controllers/` (Entry Point IPC Tauri):**
    - Comandi esposti all'interfaccia grafica tramite `#[tauri::command]` (`register`, `login`, `logout`, `get_current_user`, `send_chat_message`).
-=======
->>>>>>> 204584b9c90538055304bba7dbc776e049566d84

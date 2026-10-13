@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-use georuggine_server::{create_app, database as db, websocket, HOST, PORT};
-=======
 use georuggine_server::{HOST, PORT, create_app, database as db, websocket};
->>>>>>> 204584b9c90538055304bba7dbc776e049566d84
 use std::net::SocketAddr;
 
 #[tokio::main]

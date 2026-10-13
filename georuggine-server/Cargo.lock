@@ -27,8 +27,6 @@ dependencies = [
 ]
 
 [[package]]
-<<<<<<< HEAD
-=======
 name = "anyhow"
 version = "1.0.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -44,7 +42,6 @@ dependencies = [
 ]
 
 [[package]]
->>>>>>> 204584b9c90538055304bba7dbc776e049566d84
 name = "argon2"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -345,8 +342,6 @@ dependencies = [
 ]
 
 [[package]]
-<<<<<<< HEAD
-=======
 name = "cmake"
 version = "0.1.58"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -356,15 +351,12 @@ dependencies = [
 ]
 
 [[package]]
->>>>>>> 204584b9c90538055304bba7dbc776e049566d84
 name = "cmov"
 version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c9ea0ac24bc397ab3c98583a3c9ba74fa56b09a4449bbe172b9b1ddb016027a"
 
 [[package]]
-<<<<<<< HEAD
-=======
 name = "compact_str"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -379,15 +371,12 @@ dependencies = [
 ]
 
 [[package]]
->>>>>>> 204584b9c90538055304bba7dbc776e049566d84
 name = "const-oid"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a6ef517f0926dd24a1582492c791b6a4818a4d94e789a334894aa15b0d12f55c"
 
 [[package]]
-<<<<<<< HEAD
-=======
 name = "convert_case"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -397,7 +386,6 @@ dependencies = [
 ]
 
 [[package]]
->>>>>>> 204584b9c90538055304bba7dbc776e049566d84
 name = "core-foundation-sys"
 version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -882,13 +870,8 @@ dependencies = [
  "axum",
  "axum-extra",
  "chrono",
-<<<<<<< HEAD
- "futures-util",
- "headers",
-=======
  "crossterm",
  "futures-util",
->>>>>>> 204584b9c90538055304bba7dbc776e049566d84
  "jsonwebtoken",
  "password-hash",
  "ratatui",
@@ -2929,22 +2912,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tungstenite"
-version = "0.30.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e48ac77174b19c110a50ab2128b24215ac9cb40e0e12e093fb602d175c569d22"
-dependencies = [
- "bytes",
- "data-encoding",
- "http",
- "httparse",
- "log",
- "rand 0.10.3",
- "sha1 0.11.0",
- "thiserror",
-]
-
-[[package]]
 name = "typenum"
 version = "1.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3208,8 +3175,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "626c4bac6755d76ffc12cb01b2eac751db1996b9e0041de9aa02c8c211ddc82c"
 
 [[package]]
-<<<<<<< HEAD
-=======
 name = "winapi"
 version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3232,7 +3197,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 
 [[package]]
->>>>>>> 204584b9c90538055304bba7dbc776e049566d84
 name = "windows-core"
 version = "0.62.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
