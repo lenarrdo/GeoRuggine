@@ -5,7 +5,7 @@ pub mod tui;
 pub mod websocket;
 
 use crate::auth::{handle_login, handle_registration};
-use crate::websocket::ws_handler;
+use crate::websocket::{clients::ClientsList, ws_handler};
 use axum::{
     Router,
     extract::FromRef,
@@ -20,7 +20,7 @@ pub const BASE_URL: &str = "/api/v1";
 #[derive(Clone)]
 pub struct AppState {
     pub db: SqlitePool,
-    pub clients: websocket::clients::ClientsList,
+    pub clients: ClientsList,
 }
 
 impl FromRef<AppState> for SqlitePool {
@@ -29,13 +29,13 @@ impl FromRef<AppState> for SqlitePool {
     }
 }
 
-impl FromRef<AppState> for websocket::clients::ClientsList {
+impl FromRef<AppState> for ClientsList {
     fn from_ref(state: &AppState) -> Self {
         state.clients.clone()
     }
 }
 
-pub fn create_app(db_pool: SqlitePool, clients: websocket::clients::ClientsList) -> Router {
+pub fn create_app(db_pool: SqlitePool, clients: ClientsList) -> Router {
     let app_state = AppState {
         db: db_pool,
         clients,
