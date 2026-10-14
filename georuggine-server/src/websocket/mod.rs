@@ -1,7 +1,7 @@
 pub mod clients;
 
 use crate::auth::services::token_service;
-use crate::messages::{ChatMessage, ClientIncomingMessage};
+use crate::messages::{ClientIncomingMessage, TextMessage};
 use crate::websocket::clients::{ClientsList, ConnectedClient};
 use axum::{
     Json,
@@ -62,7 +62,7 @@ pub async fn ws_handler(
 /// Gestisce l'intero ciclo di vita di una singola connessione WebSocket attiva.
 pub async fn handle_socket(socket: WebSocket, user_id: i64, clients: ClientsList) {
     let (mut ws_sender, mut ws_receiver) = socket.split();
-    let (tx, mut rx) = mpsc::unbounded_channel::<ChatMessage>();
+    let (tx, mut rx) = mpsc::unbounded_channel::<TextMessage>();
 
     let nof_connected_users = clients.add(user_id, ConnectedClient::new(tx)).await;
     println!(
@@ -129,7 +129,7 @@ pub async fn process_message(msg: Message, user_id: i64) -> ControlFlow<(), ()> 
                             pos.x_coord, pos.y_coord, pos.timestamp
                         );
                     }
-                    ClientIncomingMessage::Chat(chat_msg) => {
+                    ClientIncomingMessage::Text(chat_msg) => {
                         println!(
                             ">>> [MESSAGGIO AL SERVER] Da user_id {user_id} (User {}): `{}`",
                             chat_msg.sender_id, chat_msg.contents

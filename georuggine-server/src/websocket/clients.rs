@@ -1,15 +1,16 @@
-use crate::messages::ChatMessage;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::{RwLock, mpsc};
+
+use crate::messages::TextMessage;
 
 /// Rappresenta un client WebSocket attualmente connesso al server.
 #[derive(Clone)]
 pub struct ConnectedClient {
-    pub tx: mpsc::UnboundedSender<ChatMessage>,
+    pub tx: mpsc::UnboundedSender<TextMessage>,
 }
 
 impl ConnectedClient {
-    pub fn new(tx: mpsc::UnboundedSender<ChatMessage>) -> Self {
+    pub fn new(tx: mpsc::UnboundedSender<TextMessage>) -> Self {
         ConnectedClient { tx }
     }
 }
@@ -54,7 +55,7 @@ impl ClientsList {
     }
 
     /// Invia un messaggio in BROADCAST a tutte le sessioni WebSocket attive.
-    pub async fn send_all(&self, msg: ChatMessage) {
+    pub async fn send_all(&self, msg: TextMessage) {
         let guard = self.list.read().await;
         for (addr, client) in guard.iter() {
             if let Err(e) = client.tx.send(msg.clone()) {
@@ -64,7 +65,7 @@ impl ClientsList {
     }
 
     /// Invia un messaggio a un SINGOLO CLIENT, specificando l'user_id.
-    pub async fn send_one(&self, target_user_id: i64, msg: ChatMessage) -> bool {
+    pub async fn send_one(&self, target_user_id: i64, msg: TextMessage) -> bool {
         let guard = self.list.read().await;
 
         let Some(client) = guard.get(&target_user_id) else {

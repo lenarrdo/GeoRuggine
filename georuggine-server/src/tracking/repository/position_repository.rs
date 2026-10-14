@@ -1,5 +1,4 @@
-use crate::tracking::api::dto::PositionUpdate;
-use crate::tracking::domain::position::Position;
+use crate::{messages::PositionUpdate, tracking::domain::position::Position};
 use sqlx::SqlitePool;
 
 pub struct PositionRepository;

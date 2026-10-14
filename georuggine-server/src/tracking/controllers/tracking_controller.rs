@@ -1,5 +1,4 @@
-use crate::tracking::api::dto::PositionUpdate;
-use crate::tracking::services::tracking_service::TrackingService;
+use crate::{messages::PositionUpdate, tracking::services::tracking_service::TrackingService};
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use sqlx::SqlitePool;
 
