@@ -1,5 +1,11 @@
-use crate::auth::domain::user::User;
 use sqlx::SqlitePool;
+
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub struct User {
+    pub id: i64,
+    pub username: String,
+    pub password_hash: String,
+}
 
 pub struct UserRepository;
 

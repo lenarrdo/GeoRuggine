@@ -1,4 +1,4 @@
-use crate::auth::{repository::user_repository::UserRepository, services::token_service};
+use crate::auth::{services::token_service, user_repository::UserRepository};
 use argon2::{Argon2, PasswordHasher, password_hash::PasswordVerifier};
 use password_hash::phc::PasswordHash;
 use sqlx::SqlitePool;
@@ -39,16 +39,15 @@ impl AuthService {
             .map_err(|_| RegisterError::HashError)?
             .to_string();
 
-        match UserRepository::create_user(db_pool, username, &password_hash).await {
-            Ok(_) => Ok(()),
-            Err(sqlx::Error::Database(db_err)) if db_err.is_unique_violation() => {
-                Err(RegisterError::UsernameExists)
-            }
-            Err(e) => {
-                eprintln!("Database error: {e}");
-                Err(RegisterError::DatabaseError(e.to_string()))
-            }
-        }
+        UserRepository::create_user(db_pool, username, &password_hash)
+            .await
+            .map_err(|e| match e {
+                sqlx::Error::Database(e) if e.is_unique_violation() => {
+                    RegisterError::UsernameExists
+                }
+                other => RegisterError::DatabaseError(other.to_string()),
+            })
+            .map(|_| ())
     }
 
     pub async fn login(
@@ -65,10 +64,7 @@ impl AuthService {
 
         let user = UserRepository::find_by_username(db_pool, username)
             .await
-            .map_err(|e| {
-                eprintln!("Errore DB: {e}");
-                LoginError::InvalidCredentials
-            })?
+            .map_err(|e| LoginError::InternalError(e.to_string()))?
             .ok_or(LoginError::InvalidCredentials)?;
 
         let parsed_hash = PasswordHash::new(&user.password_hash).map_err(|e| {
@@ -76,15 +72,17 @@ impl AuthService {
             LoginError::InternalError("Invalid password hash".to_string())
         })?;
 
-        match Argon2::default().verify_password(password.as_bytes(), &parsed_hash) {
-            Ok(_) => {
-                let token = token_service::generate_jwt(user.id, username).map_err(|_| {
-                    LoginError::InternalError("Couldn't Generate Token.".to_string())
-                })?;
-                Ok(token)
-            }
-            Err(password_hash::Error::PasswordInvalid) => Err(LoginError::InvalidCredentials),
-            Err(e) => Err(LoginError::InternalError(e.to_string())),
-        }
+        let _ = Argon2::default()
+            .verify_password(password.as_bytes(), &parsed_hash)
+            .map_err(|e| match e {
+                password_hash::Error::PasswordInvalid => LoginError::InvalidCredentials,
+                other => LoginError::InternalError(other.to_string()),
+            })
+            .map(|_| ())?;
+
+        let token = token_service::generate_jwt(user.id, username)
+            .map_err(|_| LoginError::InternalError("Couldn't Generate Token.".to_string()))?;
+
+        Ok(token)
     }
 }
