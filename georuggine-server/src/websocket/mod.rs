@@ -60,7 +60,7 @@ pub async fn ws_handler(
 }
 
 /// Gestisce l'intero ciclo di vita di una singola connessione WebSocket attiva.
-pub async fn handle_socket(socket: WebSocket, user_id: i64, clients: ClientsList) {
+pub async fn handle_socket(socket: WebSocket, user_id: u32, clients: ClientsList) {
     let (mut ws_sender, mut ws_receiver) = socket.split();
     let (tx, mut rx) = mpsc::unbounded_channel::<TextMessage>();
 
@@ -118,7 +118,7 @@ pub async fn handle_socket(socket: WebSocket, user_id: i64, clients: ClientsList
 }
 
 /// Elabora i singoli messaggi ricevuti dal client via WebSocket.
-pub async fn process_message(msg: Message, user_id: i64) -> ControlFlow<(), ()> {
+pub async fn process_message(msg: Message, user_id: u32) -> ControlFlow<(), ()> {
     match msg {
         Message::Text(t) => {
             if let Ok(incoming) = serde_json::from_str::<ClientIncomingMessage>(&t) {

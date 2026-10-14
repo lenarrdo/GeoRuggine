@@ -7,13 +7,13 @@ const TOKEN_DURATION: Duration = Duration::hours(24);
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    pub user_id: i64,
+    pub user_id: u32,
     pub username: String,
     pub exp: usize,
     pub iat: usize,
 }
 
-pub fn generate_jwt(user_id: i64, username: &str) -> Result<String, jsonwebtoken::errors::Error> {
+pub fn generate_jwt(user_id: u32, username: &str) -> Result<String, jsonwebtoken::errors::Error> {
     let now = Utc::now();
     let expire = now + TOKEN_DURATION;
 

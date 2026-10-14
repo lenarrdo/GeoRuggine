@@ -18,7 +18,7 @@ impl ConnectedClient {
 /// Registro condiviso di tutte le sessioni WebSocket attive.
 #[derive(Clone)]
 pub struct ClientsList {
-    list: Arc<RwLock<HashMap<i64, ConnectedClient>>>,
+    list: Arc<RwLock<HashMap<u32, ConnectedClient>>>,
 }
 
 impl ClientsList {
@@ -30,7 +30,7 @@ impl ClientsList {
 
     /// Registra un nuovo client nella lista.
     /// Restituisce il numero di utenti connessi dopo l'aggiunta.
-    pub async fn add(&self, user_id: i64, new_client: ConnectedClient) -> usize {
+    pub async fn add(&self, user_id: u32, new_client: ConnectedClient) -> usize {
         let mut guard = self.list.write().await;
         guard.insert(user_id, new_client);
         guard.len()
@@ -38,7 +38,7 @@ impl ClientsList {
 
     /// Rimuove un client dalla lista.
     /// Restituisce il numero di utenti connessi dopo la rimozione.
-    pub async fn remove(&self, user_id: i64) -> usize {
+    pub async fn remove(&self, user_id: u32) -> usize {
         let mut guard = self.list.write().await;
         guard.remove(&user_id);
         guard.len()
@@ -50,7 +50,7 @@ impl ClientsList {
     }
 
     /// Restituisce true se un utente è connesso, false altrimenti.
-    pub async fn is_connected(&self, user_id: i64) -> bool {
+    pub async fn is_connected(&self, user_id: u32) -> bool {
         self.list.read().await.contains_key(&user_id)
     }
 
@@ -65,7 +65,7 @@ impl ClientsList {
     }
 
     /// Invia un messaggio a un SINGOLO CLIENT, specificando l'user_id.
-    pub async fn send_one(&self, target_user_id: i64, msg: TextMessage) -> bool {
+    pub async fn send_one(&self, target_user_id: u32, msg: TextMessage) -> bool {
         let guard = self.list.read().await;
 
         let Some(client) = guard.get(&target_user_id) else {

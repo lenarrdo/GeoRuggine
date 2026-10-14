@@ -40,7 +40,7 @@ impl MessageRepository {
     // FIXME
     // pub async fn get_messages_for_user(
     //     db_pool: &SqlitePool,
-    //     user_id: i64,
+    //     user_id: u32,
     // ) -> Result<Vec<ChatMessage>, sqlx::Error> {
     //     let records = sqlx::query_as::<_, ChatMessage>(
     //         "SELECT message_id, sender_id, receiver_id, timestamp, contents FROM messages WHERE sender_id = ? OR receiver_id = ? ORDER BY timestamp ASC",

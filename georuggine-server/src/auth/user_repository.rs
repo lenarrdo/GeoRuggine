@@ -2,7 +2,7 @@ use sqlx::SqlitePool;
 
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct User {
-    pub id: i64,
+    pub id: u32,
     pub username: String,
     pub password_hash: String,
 }
