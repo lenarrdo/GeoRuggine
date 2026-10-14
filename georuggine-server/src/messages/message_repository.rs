@@ -1,6 +1,6 @@
 use sqlx::SqlitePool;
 
-use crate::messages::TextMessage;
+use crate::messages::{PositionUpdate, TextMessage};
 
 pub struct MessageRepository {
     db_pool: SqlitePool,
@@ -11,15 +11,28 @@ impl MessageRepository {
         MessageRepository { db_pool }
     }
 
-    pub async fn save_message(&self, msg: &TextMessage) -> Result<(), sqlx::Error> {
-        let receiver = msg.receiver_id;
+    pub async fn save_text_message(&self, msg: &TextMessage) -> Result<(), sqlx::Error> {
         sqlx::query("INSERT INTO messages (sender_id, receiver_id, timestamp, contents) VALUES (?, ?, ?, ?);")
             .bind(msg.sender_id)
-            .bind(receiver)
+            .bind(msg.receiver_id)
             .bind(&msg.timestamp)
             .bind(&msg.contents)
             .execute(&self.db_pool)
             .await?;
+
+        Ok(())
+    }
+
+    pub async fn save_position(&self, position: &PositionUpdate) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            "INSERT INTO positions (user_id, x_coord, y_coord, timestamp) VALUES (?, ?, ?, ?);",
+        )
+        .bind(position.sender_id)
+        .bind(position.x_coord)
+        .bind(position.y_coord)
+        .bind(&position.timestamp)
+        .execute(&self.db_pool)
+        .await?;
 
         Ok(())
     }

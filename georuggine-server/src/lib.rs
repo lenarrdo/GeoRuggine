@@ -1,7 +1,6 @@
 pub mod auth;
 pub mod database;
 pub mod messages;
-pub mod tracking;
 pub mod websocket;
 
 use crate::auth::{handle_login, handle_registration};
