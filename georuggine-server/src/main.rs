@@ -1,10 +1,10 @@
-use georuggine_server::{HOST, PORT, create_app, database as db, websocket};
+use georuggine_server::{HOST, PORT, create_app, database as db, websocket::clients::ClientsList};
 use std::net::SocketAddr;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let db_pool = db::init(true).await?;
-    let clients = websocket::create_clients();
+    let clients = ClientsList::new();
 
     let app = create_app(db_pool, clients);
 
