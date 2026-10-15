@@ -3,7 +3,7 @@ use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode}
 use serde::{Deserialize, Serialize};
 
 const JWT_SECRET: &[u8] = b"super0-secretW-fleet0-key";
-const TOKEN_DURATION_HRS: i64 = 24;
+const TOKEN_DURATION: Duration = Duration::hours(24);
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -15,7 +15,7 @@ pub struct Claims {
 
 pub fn generate_jwt(user_id: i64, username: &str) -> Result<String, jsonwebtoken::errors::Error> {
     let now = Utc::now();
-    let expire = now + Duration::hours(TOKEN_DURATION_HRS);
+    let expire = now + TOKEN_DURATION;
 
     let claims = Claims {
         user_id,
