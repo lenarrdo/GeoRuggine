@@ -25,5 +25,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap();
     });
 
-    ratatui::run(|terminal| App::new().run(terminal))
+    let terminal = ratatui::init();
+    let app_result = App::new().run(terminal).await;
+    ratatui::restore();
+
+    app_result
 }

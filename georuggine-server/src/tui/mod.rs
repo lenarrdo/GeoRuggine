@@ -1,31 +1,73 @@
-use crossterm::event::{self, KeyCode, KeyEvent};
+use std::time::Duration;
+
+use crossterm::event::{self, Event as CrosstermEvent, KeyCode, KeyEvent};
 use ratatui::{
     DefaultTerminal, Frame,
     layout::{Constraint, Layout},
     style::{Color, Style, palette::tailwind::SLATE},
     widgets::{Block, BorderType, Paragraph},
 };
+use tokio::sync::mpsc;
 
 const TEXT_FG_COLOR: Color = SLATE.c200;
 
+pub enum AppEvent {
+    Input(CrosstermEvent),
+    ClientDisconnected(u32),
+    Tick,
+}
+
 pub struct App {
     exit: bool,
+    connected_users: Vec<u32>,
 }
 
 impl App {
     pub fn new() -> Self {
-        App { exit: false }
+        App {
+            exit: false,
+            connected_users: vec![],
+        }
     }
 
-    pub fn run(
+    pub async fn run(
         &mut self,
-        terminal: &mut DefaultTerminal,
+        mut terminal: DefaultTerminal,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        let (tx, mut rx) = mpsc::channel(100);
+
+        let tx_input = tx.clone();
+        std::thread::spawn(move || {
+            loop {
+                if let Ok(ev) = event::read() {
+                    if tx_input.blocking_send(AppEvent::Input(ev)).is_err() {
+                        break;
+                    }
+                }
+            }
+        });
+
+        let tx_clients = tx.clone();
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(Duration::from_millis(100));
+            loop {
+                interval.tick().await;
+                if tx_clients.send(AppEvent::Tick).await.is_err() {
+                    break;
+                }
+            }
+        });
+
         while !self.exit {
             terminal.draw(|frame| self.render(frame))?;
 
-            if let Some(key) = event::read()?.as_key_press_event() {
-                self.handle_key(key);
+            match rx.recv().await {
+                Some(AppEvent::Input(CrosstermEvent::Key(key))) => self.handle_key(key),
+                Some(AppEvent::Tick) => {}
+                Some(AppEvent::ClientDisconnected(user_id)) => {
+                    self.connected_users.retain(|&x| x != user_id)
+                }
+                _ => {}
             }
         }
 
