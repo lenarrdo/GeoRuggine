@@ -1,6 +1,6 @@
 pub mod message_repository;
 
-use chrono::Utc;
+use chrono::Local;
 use serde::{Deserialize, Serialize};
 
 /// Tipi di messaggi che il client può inviare al server
@@ -26,7 +26,7 @@ impl TextMessage {
             sender_id,
             receiver_id,
             contents,
-            timestamp: Utc::now().format("%Y-%m-%dT%H:%M:%S").to_string(),
+            timestamp: Local::now().format("%Y-%m-%dT%H:%M:%S").to_string(),
         }
     }
 }
