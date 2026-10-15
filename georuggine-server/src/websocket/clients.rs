@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 use tokio::sync::{RwLock, mpsc};
 
 use crate::messages::TextMessage;
@@ -16,15 +16,14 @@ impl ConnectedClient {
 }
 
 /// Registro condiviso di tutte le sessioni WebSocket attive.
-#[derive(Clone)]
 pub struct ClientsList {
-    list: Arc<RwLock<HashMap<u32, ConnectedClient>>>,
+    list: RwLock<HashMap<u32, ConnectedClient>>,
 }
 
 impl ClientsList {
     pub fn new() -> Self {
         ClientsList {
-            list: Arc::new(RwLock::new(HashMap::new())),
+            list: RwLock::new(HashMap::new()),
         }
     }
 

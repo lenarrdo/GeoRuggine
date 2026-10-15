@@ -1,6 +1,8 @@
 pub mod message_popup;
 pub mod user_list;
 
+use std::sync::Arc;
+
 use crossterm::event::{Event as CrosstermEvent, EventStream, KeyCode, KeyEvent};
 use futures::StreamExt;
 use ratatui::{
@@ -11,9 +13,12 @@ use ratatui::{
 };
 use tokio::sync::mpsc::Receiver;
 
-use crate::tui::{
-    message_popup::MessagePopup,
-    user_list::{User, UserList},
+use crate::{
+    tui::{
+        message_popup::MessagePopup,
+        user_list::{User, UserList},
+    },
+    websocket::clients::ClientsList,
 };
 
 const TEXT_FG_COLOR: Color = SLATE.c200;
@@ -31,7 +36,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(rx: Receiver<AppEvent>) -> Self {
+    pub fn new(rx: Receiver<AppEvent>, _clients: Arc<ClientsList>) -> Self {
         App {
             exit: false,
             connected_users: UserList::default(),

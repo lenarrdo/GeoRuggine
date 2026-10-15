@@ -1,9 +1,5 @@
 pub mod clients;
 
-use crate::auth::services::token_service;
-use crate::messages::{ClientIncomingMessage, TextMessage};
-use crate::tui::AppEvent;
-use crate::websocket::clients::{ClientsList, ConnectedClient};
 use axum::{
     Json,
     extract::{
@@ -16,8 +12,14 @@ use axum::{
 };
 use futures_util::{sink::SinkExt, stream::StreamExt};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use std::{net::SocketAddr, ops::ControlFlow};
 use tokio::sync::mpsc::{self, Sender};
+
+use crate::auth::services::token_service;
+use crate::messages::{ClientIncomingMessage, TextMessage};
+use crate::tui::AppEvent;
+use crate::websocket::clients::{ClientsList, ConnectedClient};
 
 #[derive(Deserialize)]
 pub struct WsParams {
@@ -35,7 +37,7 @@ pub async fn ws_handler(
     ws: WebSocketUpgrade,
     Query(params): Query<WsParams>,
     ConnectInfo(_addr): ConnectInfo<SocketAddr>,
-    State(clients): State<ClientsList>,
+    State(clients): State<Arc<ClientsList>>,
     State(tx): State<Sender<AppEvent>>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<WsResponse>)> {
     let claims = token_service::validate_jwt(&params.token).map_err(|_| {
@@ -65,7 +67,7 @@ pub async fn ws_handler(
 }
 
 /// Gestisce l'intero ciclo di vita di una singola connessione WebSocket attiva.
-pub async fn handle_socket(socket: WebSocket, user_id: u32, clients: ClientsList) {
+pub async fn handle_socket(socket: WebSocket, user_id: u32, clients: Arc<ClientsList>) {
     let (mut ws_sender, mut ws_receiver) = socket.split();
     let (tx, mut rx) = mpsc::unbounded_channel::<TextMessage>();
 

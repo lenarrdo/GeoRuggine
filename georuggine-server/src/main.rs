@@ -8,7 +8,7 @@ use axum::{
     Router,
     routing::{get, post},
 };
-use std::net::SocketAddr;
+use std::{net::SocketAddr, sync::Arc};
 use tokio::sync::mpsc;
 
 use crate::auth::{handle_login, handle_registration};
@@ -25,9 +25,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // channel to send messages to the UI
     let (tx, rx) = mpsc::channel(100);
 
+    let list = Arc::new(ClientsList::new());
     let db_pool = db::init(true).await?;
-    let mut tui = App::new(rx);
-
     let router = Router::new()
         .route(
             &format!("{BASE_URL}/auth/register"),
@@ -35,7 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .route(&format!("{BASE_URL}/auth/login"), post(handle_login))
         .route(&format!("{BASE_URL}/ws"), get(ws_handler))
-        .with_state(AppState::new(db_pool, ClientsList::new(), tx));
+        .with_state(AppState::new(db_pool, Arc::clone(&list), tx));
 
     let listener = tokio::net::TcpListener::bind(format!("{HOST}:{PORT}"))
         .await
@@ -53,7 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let terminal = ratatui::init();
-    let app_result = tui.run(terminal).await;
+    let app_result = App::new(rx, list).run(terminal).await;
     ratatui::restore();
 
     app_result
