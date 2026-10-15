@@ -1,3 +1,4 @@
+pub mod message_popup;
 pub mod user_list;
 
 use crossterm::event::{self, Event as CrosstermEvent, KeyCode, KeyEvent};
@@ -9,7 +10,10 @@ use ratatui::{
 };
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
-use crate::tui::user_list::{User, UserList};
+use crate::tui::{
+    message_popup::MessagePopup,
+    user_list::{User, UserList},
+};
 
 const TEXT_FG_COLOR: Color = SLATE.c200;
 
@@ -20,6 +24,7 @@ pub enum AppEvent {
 
 pub struct App {
     connected_users: UserList,
+    message_popup: MessagePopup,
     exit: bool,
     pub tx: Sender<AppEvent>,
     rx: Receiver<AppEvent>,
@@ -29,7 +34,8 @@ impl App {
     pub fn new() -> Self {
         let (tx, rx) = mpsc::channel(100);
         App {
-            connected_users: UserList::new(vec![]),
+            connected_users: UserList::default(),
+            message_popup: MessagePopup::default(),
             exit: false,
             tx,
             rx,
@@ -68,6 +74,12 @@ impl App {
     }
 
     fn handle_key(&mut self, key: KeyEvent) {
+        if self.message_popup.visible {
+            return self
+                .message_popup
+                .handle_key(key, &mut self.connected_users);
+        }
+
         match key.code {
             KeyCode::Char('q') => self.exit = true,
             KeyCode::Char('k') | KeyCode::Up => self.connected_users.select_prev(),
@@ -75,6 +87,7 @@ impl App {
             KeyCode::Char('g') | KeyCode::Home => self.connected_users.select_first(),
             KeyCode::Char('G') | KeyCode::End => self.connected_users.select_last(),
             KeyCode::Char(' ') => self.connected_users.toggle_selected(),
+            KeyCode::Char('n') => self.message_popup.show(),
             _ => {}
         }
     }
@@ -105,5 +118,8 @@ impl App {
             Paragraph::new("Use ↓↑ to move, g/G to go top/bottom, q to quit."),
             footer,
         );
+
+        self.message_popup
+            .render(rounded_block("New Message"), frame);
     }
 }

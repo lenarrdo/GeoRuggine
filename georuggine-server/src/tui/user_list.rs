@@ -32,6 +32,7 @@ impl From<&User> for ListItem<'_> {
     }
 }
 
+#[derive(Default)]
 pub struct UserList {
     pub users: Vec<User>,
     pub state: ListState,
