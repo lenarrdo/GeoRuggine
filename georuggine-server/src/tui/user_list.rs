@@ -1,0 +1,123 @@
+use ratatui::{
+    Frame,
+    layout::Rect,
+    style::{Color, Modifier, Style},
+    text::Line,
+    widgets::{Block, List, ListItem, ListState},
+};
+
+pub struct User {
+    pub id: u32,
+    pub username: String,
+    selected: bool,
+}
+
+impl User {
+    pub fn new(id: u32, username: &str) -> Self {
+        User {
+            id,
+            username: username.to_owned(),
+            selected: false,
+        }
+    }
+}
+
+impl From<&User> for ListItem<'_> {
+    fn from(user: &User) -> Self {
+        let prefix = if user.selected { "✗" } else { "☐" };
+        ListItem::new(Line::styled(
+            format!("{prefix} {}", user.username),
+            Color::Blue,
+        ))
+    }
+}
+
+pub struct UserList {
+    pub users: Vec<User>,
+    pub state: ListState,
+}
+
+impl UserList {
+    pub fn new(users: Vec<User>) -> Self {
+        let mut state = ListState::default();
+        if !users.is_empty() {
+            state.select(Some(0));
+        }
+
+        UserList { users, state }
+    }
+
+    pub fn render(&mut self, block: Block, frame: &mut Frame, area: Rect) {
+        let list = List::new(
+            self.users
+                .iter()
+                .map(|user| ListItem::from(user))
+                .collect::<Vec<_>>(),
+        )
+        .block(block)
+        .highlight_style(
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .add_modifier(Modifier::REVERSED),
+        )
+        .highlight_symbol("> ");
+
+        frame.render_stateful_widget(list, area, &mut self.state);
+    }
+
+    pub fn select_next(&mut self) {
+        if self.users.is_empty() {
+            return;
+        }
+
+        let curr_idx = self.state.selected().unwrap();
+        let next_idx = if curr_idx == self.users.len() - 1 {
+            Some(0)
+        } else {
+            Some(curr_idx + 1)
+        };
+
+        self.state.select(next_idx);
+    }
+
+    pub fn select_prev(&mut self) {
+        if self.users.is_empty() {
+            return;
+        }
+
+        let curr_idx = self.state.selected().unwrap();
+        let next_idx = if curr_idx == 0 {
+            Some(self.users.len() - 1)
+        } else {
+            Some(curr_idx - 1)
+        };
+
+        self.state.select(next_idx);
+    }
+
+    pub fn select_first(&mut self) {
+        self.state.select_first()
+    }
+
+    pub fn select_last(&mut self) {
+        self.state.select_last()
+    }
+
+    pub fn toggle_selected(&mut self) {
+        if let Some(i) = self.state.selected() {
+            self.users[i].selected = !self.users[i].selected;
+            self.select_next();
+        }
+    }
+
+    pub fn clear_selected_users(&mut self) {
+        self.users.iter_mut().for_each(|user| user.selected = false);
+    }
+
+    pub fn add_user(&mut self, user: User) {
+        self.users.push(user);
+        if self.users.len() == 1 {
+            self.state.select(Some(0));
+        }
+    }
+}
