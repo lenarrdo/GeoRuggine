@@ -1,14 +1,15 @@
 pub mod message_popup;
 pub mod user_list;
 
-use crossterm::event::{self, Event as CrosstermEvent, KeyCode, KeyEvent};
+use crossterm::event::{Event as CrosstermEvent, EventStream, KeyCode, KeyEvent};
+use futures::StreamExt;
 use ratatui::{
     DefaultTerminal, Frame,
     layout::{Constraint, Layout},
     style::{Color, Style, palette::tailwind::SLATE},
     widgets::{Block, BorderType, Paragraph},
 };
-use tokio::sync::mpsc::{self, Receiver, Sender};
+use tokio::sync::mpsc::Receiver;
 
 use crate::tui::{
     message_popup::MessagePopup,
@@ -23,21 +24,18 @@ pub enum AppEvent {
 }
 
 pub struct App {
+    exit: bool,
     connected_users: UserList,
     message_popup: MessagePopup,
-    exit: bool,
-    pub tx: Sender<AppEvent>,
     rx: Receiver<AppEvent>,
 }
 
 impl App {
-    pub fn new() -> Self {
-        let (tx, rx) = mpsc::channel(100);
+    pub fn new(rx: Receiver<AppEvent>) -> Self {
         App {
+            exit: false,
             connected_users: UserList::default(),
             message_popup: MessagePopup::default(),
-            exit: false,
-            tx,
             rx,
         }
     }
@@ -46,27 +44,23 @@ impl App {
         &mut self,
         mut terminal: DefaultTerminal,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let tx_input = self.tx.clone();
-        std::thread::spawn(move || {
-            loop {
-                if let Ok(ev) = event::read() {
-                    if tx_input.blocking_send(AppEvent::Input(ev)).is_err() {
-                        break;
-                    }
-                }
-            }
-        });
+        let mut reader = EventStream::new();
 
         while !self.exit {
             terminal.draw(|frame| self.render(frame))?;
 
-            match self.rx.recv().await {
-                Some(AppEvent::Input(CrosstermEvent::Key(key))) => self.handle_key(key),
-                Some(AppEvent::ClientConnected(user_id)) => {
-                    self.connected_users
-                        .add_user(User::new(user_id, "Username"));
+            tokio::select! {
+                Some(Ok(CrosstermEvent::Key(key))) = reader.next() => {
+                    self.handle_key(key);
                 }
-                _ => {}
+                Some(app_event) = self.rx.recv() => {
+                    match app_event {
+                        AppEvent::ClientConnected(user_id) => {
+                            self.connected_users.add_user(User::new(user_id, "Username"));
+                        }
+                        _ => {}
+                    }
+                }
             }
         }
 

@@ -9,6 +9,7 @@ use axum::{
     routing::{get, post},
 };
 use std::net::SocketAddr;
+use tokio::sync::mpsc;
 
 use crate::auth::{handle_login, handle_registration};
 use crate::shared::{app_state::AppState, database as db};
@@ -21,8 +22,11 @@ pub const BASE_URL: &str = "/api/v1";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // channel to send messages to the UI
+    let (tx, rx) = mpsc::channel(100);
+
     let db_pool = db::init(true).await?;
-    let mut tui = App::new();
+    let mut tui = App::new(rx);
 
     let router = Router::new()
         .route(
@@ -31,7 +35,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .route(&format!("{BASE_URL}/auth/login"), post(handle_login))
         .route(&format!("{BASE_URL}/ws"), get(ws_handler))
-        .with_state(AppState::new(db_pool, ClientsList::new(), tui.tx.clone()));
+        .with_state(AppState::new(db_pool, ClientsList::new(), tx));
 
     let listener = tokio::net::TcpListener::bind(format!("{HOST}:{PORT}"))
         .await
