@@ -67,10 +67,8 @@ impl AuthService {
             .map_err(|e| LoginError::InternalError(e.to_string()))?
             .ok_or(LoginError::InvalidCredentials)?;
 
-        let parsed_hash = PasswordHash::new(&user.password_hash).map_err(|e| {
-            eprintln!("Invalid password hash: {e}");
-            LoginError::InternalError("Invalid password hash".to_string())
-        })?;
+        let parsed_hash = PasswordHash::new(&user.password_hash)
+            .map_err(|_| LoginError::InternalError("Invalid password hash".to_string()))?;
 
         let _ = Argon2::default()
             .verify_password(password.as_bytes(), &parsed_hash)

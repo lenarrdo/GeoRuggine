@@ -22,6 +22,7 @@ pub const BASE_URL: &str = "/api/v1";
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let db_pool = db::init(true).await?;
+    let mut tui = App::new();
 
     let router = Router::new()
         .route(
@@ -30,13 +31,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .route(&format!("{BASE_URL}/auth/login"), post(handle_login))
         .route(&format!("{BASE_URL}/ws"), get(ws_handler))
-        .with_state(AppState::new(db_pool, ClientsList::new()));
+        .with_state(AppState::new(db_pool, ClientsList::new(), tui.tx.clone()));
 
     let listener = tokio::net::TcpListener::bind(format!("{HOST}:{PORT}"))
         .await
         .unwrap();
 
-    println!("Server listening on http://{HOST}:{PORT}");
+    // println!("Server listening on http://{HOST}:{PORT}");
 
     tokio::spawn(async move {
         axum::serve(
@@ -48,7 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let terminal = ratatui::init();
-    let app_result = App::new().run(terminal).await;
+    let app_result = tui.run(terminal).await;
     ratatui::restore();
 
     app_result

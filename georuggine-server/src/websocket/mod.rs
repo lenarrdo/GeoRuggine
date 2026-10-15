@@ -2,6 +2,7 @@ pub mod clients;
 
 use crate::auth::services::token_service;
 use crate::messages::{ClientIncomingMessage, TextMessage};
+use crate::tui::AppEvent;
 use crate::websocket::clients::{ClientsList, ConnectedClient};
 use axum::{
     Json,
@@ -16,7 +17,7 @@ use axum::{
 use futures_util::{sink::SinkExt, stream::StreamExt};
 use serde::{Deserialize, Serialize};
 use std::{net::SocketAddr, ops::ControlFlow};
-use tokio::sync::mpsc;
+use tokio::sync::mpsc::{self, Sender};
 
 #[derive(Deserialize)]
 pub struct WsParams {
@@ -33,8 +34,9 @@ pub struct WsResponse {
 pub async fn ws_handler(
     ws: WebSocketUpgrade,
     Query(params): Query<WsParams>,
-    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    ConnectInfo(_addr): ConnectInfo<SocketAddr>,
     State(clients): State<ClientsList>,
+    State(tx): State<Sender<AppEvent>>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<WsResponse>)> {
     let claims = token_service::validate_jwt(&params.token).map_err(|_| {
         (
@@ -54,7 +56,10 @@ pub async fn ws_handler(
         ));
     }
 
-    println!("{}@{} connected.", claims.username, addr);
+    // println!("{}@{} connected.", claims.username, addr);
+    tx.send(AppEvent::ClientConnected(claims.user_id))
+        .await
+        .unwrap(); // not sure about this
 
     Ok(ws.on_upgrade(move |socket| handle_socket(socket, claims.user_id, clients)))
 }
@@ -64,11 +69,11 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, clients: ClientsList
     let (mut ws_sender, mut ws_receiver) = socket.split();
     let (tx, mut rx) = mpsc::unbounded_channel::<TextMessage>();
 
-    let nof_connected_users = clients.add(user_id, ConnectedClient::new(tx)).await;
-    println!(
-        "Client {user_id} connesso (totale attivi: {})",
-        nof_connected_users
-    );
+    let _nof_connected_users = clients.add(user_id, ConnectedClient::new(tx)).await;
+    // println!(
+    //     "Client {user_id} connesso (totale attivi: {})",
+    //     nof_connected_users
+    // );
 
     let mut send_task = tokio::spawn(async move {
         while let Some(msg) = rx.recv().await {
