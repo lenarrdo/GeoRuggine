@@ -54,17 +54,19 @@ impl ClientsList {
     }
 
     /// Invia un messaggio in BROADCAST a tutte le sessioni WebSocket attive.
-    pub async fn send_all(&self, msg: TextMessage) {
+    pub async fn send_all(&self, msg: &str) {
         let guard = self.list.read().await;
-        for (addr, client) in guard.iter() {
-            if let Err(e) = client.tx.send(msg.clone()) {
-                eprintln!("Errore inserimento messaggio in coda broadcast per {addr}: {e}");
+
+        for (user_id, client) in guard.iter() {
+            let text_message = TextMessage::new(0, *user_id, msg.to_string());
+            if let Err(e) = client.tx.send(text_message) {
+                eprintln!("Errore inserimento messaggio in coda broadcast per {user_id}: {e}");
             }
         }
     }
 
     /// Invia un messaggio a un SINGOLO CLIENT, specificando l'user_id.
-    pub async fn send_one(&self, target_user_id: u32, msg: TextMessage) -> bool {
+    pub async fn send_one(&self, target_user_id: u32, msg: &str) -> bool {
         let guard = self.list.read().await;
 
         let Some(client) = guard.get(&target_user_id) else {
@@ -72,7 +74,8 @@ impl ClientsList {
             return false;
         };
 
-        if let Err(e) = client.tx.send(msg) {
+        let text_message = TextMessage::new(0, target_user_id, msg.to_string());
+        if let Err(e) = client.tx.send(text_message) {
             eprintln!("Errore invio a user_id {target_user_id}: {e}");
             return false;
         }

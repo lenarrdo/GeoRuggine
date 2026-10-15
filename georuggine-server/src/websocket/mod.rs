@@ -16,10 +16,10 @@ use std::sync::Arc;
 use std::{net::SocketAddr, ops::ControlFlow};
 use tokio::sync::mpsc::{self, Sender};
 
-use crate::auth::services::token_service;
 use crate::messages::{ClientIncomingMessage, TextMessage};
 use crate::tui::AppEvent;
 use crate::websocket::clients::{ClientsList, ConnectedClient};
+use crate::{auth::services::token_service, tui::user_list::User};
 
 #[derive(Deserialize)]
 pub struct WsParams {
@@ -58,10 +58,12 @@ pub async fn ws_handler(
         ));
     }
 
-    // println!("{}@{} connected.", claims.username, addr);
-    tx.send(AppEvent::ClientConnected(claims.user_id))
-        .await
-        .unwrap(); // not sure about this
+    tx.send(AppEvent::ClientConnected(User::new(
+        claims.user_id,
+        &claims.username,
+    )))
+    .await
+    .unwrap(); // not sure about this
 
     Ok(ws.on_upgrade(move |socket| handle_socket(socket, claims.user_id, clients)))
 }

@@ -111,8 +111,18 @@ impl UserList {
         }
     }
 
-    pub fn clear_selected_users(&mut self) {
-        self.users.iter_mut().for_each(|user| user.selected = false);
+    /// sets every user as unselected.
+    /// returns a vector containing the ids of the previously selected users.
+    pub fn clear_selected_users(&mut self) -> Vec<u32> {
+        let mut previously_selected = vec![];
+        for user in &mut self.users {
+            if user.selected {
+                previously_selected.push(user.id);
+                user.selected = false;
+            }
+        }
+
+        previously_selected
     }
 
     pub fn add_user(&mut self, user: User) {

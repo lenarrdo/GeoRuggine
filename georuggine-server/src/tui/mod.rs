@@ -24,8 +24,7 @@ use crate::{
 const TEXT_FG_COLOR: Color = SLATE.c200;
 
 pub enum AppEvent {
-    Input(CrosstermEvent),
-    ClientConnected(u32),
+    ClientConnected(User),
 }
 
 pub struct App {
@@ -33,15 +32,17 @@ pub struct App {
     connected_users: UserList,
     message_popup: MessagePopup,
     rx: Receiver<AppEvent>,
+    clients: Arc<ClientsList>,
 }
 
 impl App {
-    pub fn new(rx: Receiver<AppEvent>, _clients: Arc<ClientsList>) -> Self {
+    pub fn new(rx: Receiver<AppEvent>, clients: Arc<ClientsList>) -> Self {
         App {
             exit: false,
             connected_users: UserList::default(),
             message_popup: MessagePopup::default(),
             rx,
+            clients,
         }
     }
 
@@ -56,14 +57,14 @@ impl App {
 
             tokio::select! {
                 Some(Ok(CrosstermEvent::Key(key))) = reader.next() => {
-                    self.handle_key(key);
+                    self.handle_key(key).await;
                 }
                 Some(app_event) = self.rx.recv() => {
                     match app_event {
-                        AppEvent::ClientConnected(user_id) => {
-                            self.connected_users.add_user(User::new(user_id, "Username"));
+                        AppEvent::ClientConnected(user) => {
+                            self.connected_users.add_user(user);
                         }
-                        _ => {}
+                        // _ => {}
                     }
                 }
             }
@@ -72,11 +73,17 @@ impl App {
         Ok(())
     }
 
-    fn handle_key(&mut self, key: KeyEvent) {
+    async fn handle_key(&mut self, key: KeyEvent) {
         if self.message_popup.visible {
-            return self
-                .message_popup
-                .handle_key(key, &mut self.connected_users);
+            let msg = self.message_popup.handle_key(key);
+            if msg.is_some() {
+                let msg = msg.unwrap();
+                let previously_selected = self.connected_users.clear_selected_users();
+                for user_id in previously_selected {
+                    self.clients.send_one(user_id, &msg).await;
+                }
+            }
+            return;
         }
 
         match key.code {

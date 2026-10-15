@@ -5,8 +5,6 @@ use ratatui::{
     widgets::{Block, Clear, Paragraph},
 };
 
-use crate::tui::user_list::UserList;
-
 #[derive(Default)]
 pub struct MessagePopup {
     pub visible: bool,
@@ -55,7 +53,13 @@ impl MessagePopup {
         self.hide();
     }
 
-    pub fn handle_key(&mut self, key: KeyEvent, user_list: &mut UserList) {
+    pub fn handle_key(&mut self, key: KeyEvent) -> Option<String> {
+        if let KeyCode::Enter = key.code {
+            let contents = self.contents.clone();
+            self.hide_and_clear();
+            return Some(contents);
+        }
+
         match key.code {
             KeyCode::Char(c) => self.type_char(c),
             KeyCode::Backspace => self.delete_char(),
@@ -63,14 +67,11 @@ impl MessagePopup {
             KeyCode::Right => self.move_cursor_right(),
             KeyCode::End => self.move_cursor_end(),
             KeyCode::Home => self.move_cursor_beginning(),
-            KeyCode::Enter => {
-                // TODO: send message
-                self.hide_and_clear();
-                user_list.clear_selected_users();
-            }
             KeyCode::Esc => self.hide(),
             _ => {}
-        }
+        };
+
+        None
     }
 
     pub fn type_char(&mut self, c: char) {

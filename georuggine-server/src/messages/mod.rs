@@ -1,5 +1,6 @@
 pub mod message_repository;
 
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
 /// Tipi di messaggi che il client può inviare al server
@@ -17,6 +18,17 @@ pub struct TextMessage {
     pub receiver_id: u32,
     pub contents: String,
     pub timestamp: String,
+}
+
+impl TextMessage {
+    pub fn new(sender_id: u32, receiver_id: u32, contents: String) -> Self {
+        TextMessage {
+            sender_id,
+            receiver_id,
+            contents,
+            timestamp: Utc::now().format("%Y-%m-%dT%H:%M:%S").to_string(),
+        }
+    }
 }
 
 /// Coordinate geografiche/emulate inviate dal client al server
