@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { Paperclip, Terminal } from "lucide-react";
 
 interface ChatInputProps {
   onSendMessage: (text: string) => Promise<void>;
@@ -41,30 +40,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         onSubmit={handleSubmit}
         style={{ maxWidth: "900px", margin: "0 auto" }}
       >
-        <button
-          type="button"
-          className="btn btn-outline-secondary border-0 text-secondary d-flex align-items-center justify-content-center chat-attachment-btn"
-          title="Allega tracciato o coordinate"
-          disabled={disabled}
-          onClick={() => {
-            alert(
-              "Caricamento simulazione percorso: il background tracking è attualmente configurato per trasmettere periodicamente ogni 30s.",
-            );
-          }}
-        >
-          <Paperclip size={18} />
-        </button>
-
-        <span className="input-group-text bg-transparent border-0 text-success d-flex align-items-center gap-1 ps-1 pe-2 font-monospace chat-prompt-indicator">
-          <Terminal size={14} className="text-info prompt-terminal-icon" />
-          <span className="fw-bold prompt-dollar">$</span>
-        </span>
-
         <input
           id="chat-message-input"
           type="text"
-          className="form-control bg-transparent text-light border-0 shadow-none font-monospace chat-text-input"
-          placeholder="scrivi un messaggio o comando..."
+          className="form-control bg-transparent text-light border-0 shadow-none px-3 chat-text-input"
+          placeholder="Scrivi un messaggio..."
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
