@@ -34,6 +34,7 @@ impl TrackingService {
                 let pos = PositionUpdate {
                     x_coord: x,
                     y_coord: y,
+                    timestamp: chrono::Utc::now().to_rfc3339(),
                 };
 
                 // Invia la posizione sul canale condiviso MPSC verso il Task 1
@@ -43,7 +44,8 @@ impl TrackingService {
                 }
 
                 println!(
-                    "[Tracking] Inviata posizione: x={x}, y={y}"
+                    "[Tracking] Inviata posizione: x={x}, y={y}, time={}",
+                    pos.timestamp
                 );
 
                 let _ = app_clone.emit("local-position-updated", pos);

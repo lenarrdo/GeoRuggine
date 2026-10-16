@@ -80,10 +80,11 @@ async fn test_client_sends_position() {
     let mut ws_stream = connect_client(&server_url, 101, "vehicle_101").await;
     tokio::time::sleep(Duration::from_millis(50)).await;
 
-    // Invio posizione JSON (solo coordinate pure, senza timestamp né ID)
+    // Invio posizione JSON (con timestamp calcolato dal client, senza ID)
     let json = serde_json::json!({
         "x_coord": 450700,
-        "y_coord": 76800
+        "y_coord": 76800,
+        "timestamp": "2026-10-16T12:00:00Z"
     });
     ws_stream.send(Message::Text(json.to_string().into())).await.unwrap();
 
@@ -219,11 +220,12 @@ async fn test_fleet_lifecycle_flow() {
 
     assert_eq!(clients.len().await, 4);
 
-    // 2. Ciascun veicolo invia le proprie coordinate GPS (senza timestamp)
+    // 2. Ciascun veicolo invia le proprie coordinate GPS con timestamp calcolato dal client
     for (id, ws) in fleet.iter_mut() {
         let pos = PositionUpdate {
             x_coord: 1000 * (*id),
             y_coord: 2000 * (*id),
+            timestamp: Some(chrono::Utc::now().to_rfc3339()),
         };
         ws.send(Message::Text(serde_json::to_string(&pos).unwrap().into())).await.unwrap();
     }
@@ -288,4 +290,36 @@ async fn test_unauthorized_connection_rejected() {
     // Tentativo con token invalido
     let res_invalid = connect_async(&format!("{server_url}?token=token_invalido")).await;
     assert!(res_invalid.is_err(), "Connessione con token invalido deve fallire");
+}
+
+/// TEST 9: MessageRepository salva nel database il timestamp calcolato dal client
+#[tokio::test]
+async fn test_save_position_uses_client_timestamp() {
+    use std::str::FromStr;
+    let options = sqlx::sqlite::SqliteConnectOptions::from_str("sqlite::memory:").unwrap();
+    let pool = sqlx::sqlite::SqlitePoolOptions::new().connect_with(options).await.unwrap();
+
+    sqlx::query("CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT NOT NULL, password_hash TEXT NOT NULL);").execute(&pool).await.unwrap();
+    sqlx::query("CREATE TABLE positions (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, x_coord INTEGER NOT NULL, y_coord INTEGER NOT NULL, timestamp DATETIME NOT NULL, FOREIGN KEY(user_id) REFERENCES users(id));").execute(&pool).await.unwrap();
+    sqlx::query("INSERT INTO users VALUES (42, 'vehicle_42', 'hash');").execute(&pool).await.unwrap();
+
+    let repo = georuggine_server::messages::message_repository::MessageRepository::new(pool.clone());
+    let client_time = "2026-10-16T12:30:00+02:00".to_string();
+    let pos = PositionUpdate {
+        x_coord: 12345,
+        y_coord: 67890,
+        timestamp: Some(client_time.clone()),
+    };
+    let timestamp = pos.timestamp.as_deref().unwrap();
+    repo.save_position(42, &pos, timestamp).await.unwrap();
+
+    let record: (i64, i64, String) = sqlx::query_as("SELECT x_coord, y_coord, timestamp FROM positions WHERE user_id = ?")
+        .bind(42)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+
+    assert_eq!(record.0, 12345);
+    assert_eq!(record.1, 67890);
+    assert_eq!(record.2, client_time);
 }

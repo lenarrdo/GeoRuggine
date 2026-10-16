@@ -135,7 +135,11 @@ pub async fn process_message(
             if let Ok(incoming) = serde_json::from_str::<ClientIncomingMessage>(&t) {
                 match incoming {
                     ClientIncomingMessage::Position(pos) => {
-                        let timestamp = chrono::Utc::now().to_rfc3339();
+                        // Il timestamp della posizione viene calcolato dal client
+                        let timestamp = pos
+                            .timestamp
+                            .clone()
+                            .unwrap_or_else(|| chrono::Utc::now().to_rfc3339());
                         println!(
                             ">>> [COORDINATE DA CLIENT] Da user_id {user_id}: x={}, y={}, time={timestamp}",
                             pos.x_coord, pos.y_coord

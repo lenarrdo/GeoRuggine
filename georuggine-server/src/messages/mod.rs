@@ -18,10 +18,12 @@ pub struct TextMessage {
     pub timestamp: Option<String>,
 }
 
-/// Coordinate geografiche inviate dal client al server (il client invia solo coordinate pure)
+/// Coordinate geografiche inviate dal client al server (il timestamp viene calcolato dal client)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PositionUpdate {
     pub x_coord: i64,
     pub y_coord: i64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub timestamp: Option<String>,
 }
 
