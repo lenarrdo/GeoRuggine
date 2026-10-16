@@ -1,4 +1,5 @@
 pub mod message_popup;
+pub mod user_info_popup;
 pub mod user_list;
 
 use std::sync::Arc;
@@ -16,6 +17,7 @@ use tokio::sync::mpsc::Receiver;
 use crate::{
     tui::{
         message_popup::MessagePopup,
+        user_info_popup::UserInfoPopup,
         user_list::{User, UserList},
     },
     websocket::clients::ClientsList,
@@ -29,8 +31,9 @@ pub enum AppEvent {
 
 pub struct App {
     exit: bool,
-    connected_users: UserList,
+    user_list: UserList,
     message_popup: MessagePopup,
+    user_info_popup: UserInfoPopup,
     rx: Receiver<AppEvent>,
     clients: Arc<ClientsList>,
 }
@@ -39,8 +42,9 @@ impl App {
     pub fn new(rx: Receiver<AppEvent>, clients: Arc<ClientsList>) -> Self {
         App {
             exit: false,
-            connected_users: UserList::default(),
+            user_list: UserList::default(),
             message_popup: MessagePopup::default(),
+            user_info_popup: UserInfoPopup::default(),
             rx,
             clients,
         }
@@ -62,7 +66,7 @@ impl App {
                 Some(app_event) = self.rx.recv() => {
                     match app_event {
                         AppEvent::ClientConnected(user) => {
-                            self.connected_users.add_user(user);
+                            self.user_list.add_user(user);
                         }
                         // _ => {}
                     }
@@ -78,7 +82,7 @@ impl App {
             let msg = self.message_popup.handle_key(key);
             if msg.is_some() {
                 let msg = msg.unwrap();
-                let previously_selected = self.connected_users.clear_selected_users();
+                let previously_selected = self.user_list.clear_selected_users();
                 for user_id in previously_selected {
                     self.clients.send_one(user_id, &msg).await;
                 }
@@ -88,11 +92,22 @@ impl App {
 
         match key.code {
             KeyCode::Char('q') => self.exit = true,
-            KeyCode::Char('k') | KeyCode::Up => self.connected_users.select_prev(),
-            KeyCode::Char('j') | KeyCode::Down => self.connected_users.select_next(),
-            KeyCode::Char('g') | KeyCode::Home => self.connected_users.select_first(),
-            KeyCode::Char('G') | KeyCode::End => self.connected_users.select_last(),
-            KeyCode::Char(' ') => self.connected_users.toggle_selected(),
+            KeyCode::Char('k') | KeyCode::Up => self.user_list.select_prev(),
+            KeyCode::Char('j') | KeyCode::Down => self.user_list.select_next(),
+            KeyCode::Char('g') | KeyCode::Home => self.user_list.select_first(),
+            KeyCode::Char('G') | KeyCode::End => self.user_list.select_last(),
+            KeyCode::Char(' ') => self.user_list.toggle_selected(),
+            KeyCode::Char('i') => {
+                if let Some(user) = self.user_list.get_hovered_user() {
+                    self.user_info_popup.avg_speed = self
+                        .clients
+                        .get_avg_speed(user.id)
+                        .await
+                        .unwrap_or_default();
+
+                    self.user_info_popup.visible = true
+                }
+            }
             KeyCode::Char('n') => self.message_popup.show(),
             _ => {}
         }
@@ -115,7 +130,7 @@ impl App {
                 .border_style(Style::default().fg(TEXT_FG_COLOR))
                 .title(format!(" {title} "))
         };
-        self.connected_users
+        self.user_list
             .render(rounded_block("Users"), frame, user_bar);
         frame.render_widget(rounded_block("Chat"), chat);
         frame.render_widget(rounded_block("Logs"), logs);
@@ -124,6 +139,9 @@ impl App {
             Paragraph::new("Use ↓↑ to move, g/G to go top/bottom, q to quit."),
             footer,
         );
+
+        self.user_info_popup
+            .render(rounded_block("User Info"), frame);
 
         self.message_popup
             .render(rounded_block("New Message"), frame);

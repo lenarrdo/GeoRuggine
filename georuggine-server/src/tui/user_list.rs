@@ -6,6 +6,7 @@ use ratatui::{
     widgets::{Block, List, ListItem, ListState},
 };
 
+#[derive(Clone)]
 pub enum UserStatus {
     Moving,
     Still,
@@ -20,6 +21,7 @@ impl UserStatus {
     }
 }
 
+#[derive(Clone)]
 pub struct User {
     pub id: u32,
     pub username: String,
@@ -148,5 +150,13 @@ impl UserList {
         if self.users.len() == 1 {
             self.state.select(Some(0));
         }
+    }
+
+    pub fn get_hovered_user(&mut self) -> Option<User> {
+        if let Some(idx) = self.state.selected() {
+            return Some(self.users[idx].clone());
+        }
+
+        None
     }
 }
