@@ -1,17 +1,21 @@
 use std::collections::HashMap;
 use tokio::sync::{RwLock, mpsc};
 
-use crate::messages::TextMessage;
+use crate::{messages::TextMessage, tracking::Coordinates};
 
 /// Rappresenta un client WebSocket attualmente connesso al server.
 #[derive(Clone)]
 pub struct ConnectedClient {
-    pub tx: mpsc::UnboundedSender<TextMessage>,
+    tx: mpsc::UnboundedSender<TextMessage>,
+    positions: Vec<Coordinates>,
 }
 
 impl ConnectedClient {
     pub fn new(tx: mpsc::UnboundedSender<TextMessage>) -> Self {
-        ConnectedClient { tx }
+        ConnectedClient {
+            tx,
+            positions: vec![],
+        }
     }
 }
 
@@ -81,5 +85,52 @@ impl ClientsList {
         }
 
         true
+    }
+
+    /// Registra una nuova posizione per un dato utente
+    pub async fn record_position(&self, user_id: u32, pos: Coordinates) {
+        let mut guard = self.list.write().await;
+        if let Some(client) = guard.get_mut(&user_id) {
+            client.positions.push(pos);
+        }
+    }
+
+    /// Restituisce la velocità media di un utente lungo un percorso
+    /// oppure `None` se non ci sono dati a sufficienza per calcolare la velocità.
+    pub async fn get_avg_speed(&self, user_id: u32) -> Option<f64> {
+        let guard = self.list.read().await;
+        let client = guard.get(&user_id)?;
+
+        if client.positions.len() < 2 {
+            return None;
+        }
+
+        let last_pos = client.positions.last().unwrap();
+        let first_pos = client.positions.first().unwrap();
+
+        let total_distance = last_pos.distance_from(first_pos);
+
+        let duration_seconds = last_pos
+            .received_at()
+            .signed_duration_since(first_pos.received_at())
+            .num_milliseconds() as f64
+            / 1000.0;
+
+        if duration_seconds <= 0.0 {
+            return Some(0.0);
+        }
+
+        let total_hours = duration_seconds / 3600.0;
+
+        Some(total_distance / total_hours)
+    }
+
+    pub async fn get_positions(&self, user_id: u32) -> Option<Vec<Coordinates>> {
+        let guard = self.list.read().await;
+        if let Some(client) = guard.get(&user_id) {
+            return Some(client.positions.clone());
+        }
+
+        None
     }
 }

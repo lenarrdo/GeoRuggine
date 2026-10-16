@@ -16,10 +16,13 @@ use std::sync::Arc;
 use std::{net::SocketAddr, ops::ControlFlow};
 use tokio::sync::mpsc::{self, Sender};
 
-use crate::messages::{ClientIncomingMessage, TextMessage};
 use crate::tui::AppEvent;
 use crate::websocket::clients::{ClientsList, ConnectedClient};
 use crate::{auth::services::token_service, tui::user_list::User};
+use crate::{
+    messages::{ClientIncomingMessage, TextMessage},
+    tracking::Coordinates,
+};
 
 #[derive(Deserialize)]
 pub struct WsParams {
@@ -88,13 +91,17 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, clients: Arc<Clients
         }
     });
 
+    let clients_copy = Arc::clone(&clients);
     let mut recv_task = tokio::spawn(async move {
         let mut cnt = 0;
 
         while let Some(Ok(msg)) = ws_receiver.next().await {
             cnt += 1;
-            if process_message(msg, user_id).await.is_break() {
+            let result = process_message(msg, user_id).await;
+            if result.is_break() {
                 break;
+            } else if let Some(pos) = result.continue_value().unwrap() {
+                clients_copy.record_position(user_id, pos).await;
             }
         }
 
@@ -127,16 +134,18 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, clients: Arc<Clients
 }
 
 /// Elabora i singoli messaggi ricevuti dal client via WebSocket.
-pub async fn process_message(msg: Message, user_id: u32) -> ControlFlow<(), ()> {
+pub async fn process_message(msg: Message, user_id: u32) -> ControlFlow<(), Option<Coordinates>> {
+    let mut new_position = None;
     match msg {
         Message::Text(t) => {
             if let Ok(incoming) = serde_json::from_str::<ClientIncomingMessage>(&t) {
                 match incoming {
                     ClientIncomingMessage::Position(pos) => {
-                        println!(
-                            ">>> [COORDINATE DA CLIENT] Da user_id {user_id}: x={}, y={}, time={}",
-                            pos.x_coord, pos.y_coord, pos.timestamp
-                        );
+                        new_position = Some(Coordinates::new(pos.x_coord, pos.y_coord));
+                        // println!(
+                        //     ">>> [COORDINATE DA CLIENT] Da user_id {user_id}: x={}, y={}, time={}",
+                        //     pos.x_coord, pos.y_coord, pos.timestamp
+                        // );
                     }
                     ClientIncomingMessage::Text(chat_msg) => {
                         println!(
@@ -171,5 +180,5 @@ pub async fn process_message(msg: Message, user_id: u32) -> ControlFlow<(), ()> 
         }
     }
 
-    ControlFlow::Continue(())
+    ControlFlow::Continue(new_position)
 }

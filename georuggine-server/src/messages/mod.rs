@@ -35,7 +35,7 @@ impl TextMessage {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PositionUpdate {
     pub sender_id: u32,
-    pub x_coord: f32,
-    pub y_coord: f32,
+    pub x_coord: f64,
+    pub y_coord: f64,
     pub timestamp: String,
 }
