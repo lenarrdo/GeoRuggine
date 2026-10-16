@@ -24,11 +24,8 @@ pub async fn login(
     let body = AuthService::login(username.clone(), password).await?;
 
     if let Some(token) = &body.token {
-        let user_id = 1; // Default id in attesa di estrazione da claim JWT
-
         // 1. Salva la sessione nello stato condiviso
         let session = UserSession {
-            user_id,
             username: username.clone(),
             token: token.clone(),
         };
@@ -39,7 +36,7 @@ pub async fn login(
             eprintln!("[Auth] Login completato, ma errore apertura WebSocket: {e}");
         } else {
             // 3. Avvia Task 3 (Tracking periodico da file ogni 30s)
-            if let Err(e) = start_background_tracking(&app_handle, &state, user_id).await {
+            if let Err(e) = start_background_tracking(&app_handle, &state).await {
                 eprintln!("[Auth] Errore avvio background tracking: {e}");
             }
         }

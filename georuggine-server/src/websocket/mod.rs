@@ -1,8 +1,10 @@
 pub mod clients;
 
+use crate::AppState;
 use crate::auth::services::token_service;
+use crate::messages::message_repository::MessageRepository;
 use crate::messages::{ClientIncomingMessage, TextMessage};
-use crate::websocket::clients::{ClientsList, ConnectedClient};
+use crate::websocket::clients::ConnectedClient;
 use axum::{
     Json,
     extract::{
@@ -34,7 +36,7 @@ pub async fn ws_handler(
     ws: WebSocketUpgrade,
     Query(params): Query<WsParams>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
-    State(clients): State<ClientsList>,
+    State(state): State<AppState>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<WsResponse>)> {
     let claims = token_service::validate_jwt(&params.token).map_err(|_| {
         (
@@ -45,7 +47,7 @@ pub async fn ws_handler(
         )
     })?;
 
-    if clients.is_connected(claims.user_id).await {
+    if state.clients.is_connected(claims.user_id).await {
         return Err((
             StatusCode::FORBIDDEN,
             Json(WsResponse {
@@ -56,15 +58,15 @@ pub async fn ws_handler(
 
     println!("{}@{} connected.", claims.username, addr);
 
-    Ok(ws.on_upgrade(move |socket| handle_socket(socket, claims.user_id, clients)))
+    Ok(ws.on_upgrade(move |socket| handle_socket(socket, claims.user_id, state)))
 }
 
 /// Gestisce l'intero ciclo di vita di una singola connessione WebSocket attiva.
-pub async fn handle_socket(socket: WebSocket, user_id: i64, clients: ClientsList) {
+pub async fn handle_socket(socket: WebSocket, user_id: i64, state: AppState) {
     let (mut ws_sender, mut ws_receiver) = socket.split();
     let (tx, mut rx) = mpsc::unbounded_channel::<TextMessage>();
 
-    let nof_connected_users = clients.add(user_id, ConnectedClient::new(tx)).await;
+    let nof_connected_users = state.clients.add(user_id, ConnectedClient::new(tx)).await;
     println!(
         "Client {user_id} connesso (totale attivi: {})",
         nof_connected_users
@@ -79,12 +81,17 @@ pub async fn handle_socket(socket: WebSocket, user_id: i64, clients: ClientsList
         }
     });
 
+    let message_repo = MessageRepository::new(state.db.clone());
+
     let mut recv_task = tokio::spawn(async move {
         let mut cnt = 0;
 
         while let Some(Ok(msg)) = ws_receiver.next().await {
             cnt += 1;
-            if process_message(msg, user_id).await.is_break() {
+            if process_message(msg, user_id, &message_repo)
+                .await
+                .is_break()
+            {
                 break;
             }
         }
@@ -108,7 +115,7 @@ pub async fn handle_socket(socket: WebSocket, user_id: i64, clients: ClientsList
         }
     }
 
-    let nof_connected_users = clients.remove(user_id).await;
+    let nof_connected_users = state.clients.remove(user_id).await;
     println!(
         "Client {user_id} disconnesso (rimanenti: {})",
         nof_connected_users
@@ -118,22 +125,37 @@ pub async fn handle_socket(socket: WebSocket, user_id: i64, clients: ClientsList
 }
 
 /// Elabora i singoli messaggi ricevuti dal client via WebSocket.
-pub async fn process_message(msg: Message, user_id: i64) -> ControlFlow<(), ()> {
+pub async fn process_message(
+    msg: Message,
+    user_id: i64,
+    message_repo: &MessageRepository,
+) -> ControlFlow<(), ()> {
     match msg {
         Message::Text(t) => {
             if let Ok(incoming) = serde_json::from_str::<ClientIncomingMessage>(&t) {
                 match incoming {
                     ClientIncomingMessage::Position(pos) => {
+                        let timestamp = chrono::Utc::now().to_rfc3339();
                         println!(
-                            ">>> [COORDINATE DA CLIENT] Da user_id {user_id}: x={}, y={}, time={}",
-                            pos.x_coord, pos.y_coord, pos.timestamp
+                            ">>> [COORDINATE DA CLIENT] Da user_id {user_id}: x={}, y={}, time={timestamp}",
+                            pos.x_coord, pos.y_coord
                         );
+
+                        if let Err(e) = message_repo.save_position(user_id, &pos, &timestamp).await {
+                            eprintln!("Errore salvataggio posizione nel DB per user_id {user_id}: {e}");
+                        }
                     }
                     ClientIncomingMessage::Text(chat_msg) => {
+                        let timestamp = chrono::Utc::now().to_rfc3339();
                         println!(
-                            ">>> [MESSAGGIO AL SERVER] Da user_id {user_id} (User {}): `{}`",
-                            chat_msg.sender_id, chat_msg.contents
+                            ">>> [MESSAGGIO AL SERVER] Da user_id {user_id} ({timestamp}): `{}`",
+                            chat_msg.contents
                         );
+
+                        // Il server associa sender_id = user_id, receiver_id = None (Centrale/Server) e timestamp calcolato dal server
+                        if let Err(e) = message_repo.save_text_message(user_id, None, &chat_msg, &timestamp).await {
+                            eprintln!("Errore salvataggio messaggio nel DB per user_id {user_id}: {e}");
+                        }
                     }
                 }
             } else {

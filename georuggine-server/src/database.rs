@@ -60,7 +60,7 @@ pub async fn init(reset_tables: bool) -> Result<Pool<Sqlite>, Box<dyn std::error
         "CREATE TABLE messages (
             message_id INTEGER PRIMARY KEY,
             sender_id INTEGER NOT NULL,
-            receiver_id INTEGER NOT NULL,
+            receiver_id INTEGER,
             timestamp DATETIME NOT NULL,
             contents TEXT,
             FOREIGN KEY(sender_id) REFERENCES users(id),

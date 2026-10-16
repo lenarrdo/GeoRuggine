@@ -8,7 +8,6 @@ type WsTx = Arc<Mutex<Option<mpsc::UnboundedSender<ClientIncomingMessage>>>>;
 type Handle = Arc<Mutex<Option<AbortHandle>>>;
 type Session = Arc<Mutex<Option<UserSession>>>;
 
-
 /// Stato condiviso thread-safe dell'applicazione client
 #[derive(Default, Clone)]
 pub struct AppState {
@@ -33,27 +32,22 @@ impl AppState {
         }
     }
 
-    /// Ferma il task periodico di tracking
-    pub fn stop_tracking(&self) {
+    /// Distrugge completamente tutte le risorse alla disconnessione:
+    /// - Abortisce il task di tracking (Task 3)
+    /// - Abortisce il task di trasmissione (Task 1)
+    /// - Abortisce il task di ricezione (Task 2)
+    /// - Distrugge il canale MPSC azzerando il sender (ws_tx = None)
+    /// - Rilascia il socket TCP sottostante (inviando FIN al server)
+    pub fn disconnect_ws(&self) {
+        // 1. Ferma e distrugge il task di tracking (Task 3)
         if let Ok(mut guard) = self.tracking_abort.lock() {
             if let Some(handle) = guard.take() {
                 handle.abort();
                 println!("[Tracking] Task tracking abortito e distrutto");
             }
         }
-    }
 
-    /// Distrugge completamente tutte le risorse:
-    /// - Abortisce il task di trasmissione (Task 1)
-    /// - Abortisce il task di ricezione (Task 2)
-    /// - Abortisce il task di tracking (Task 3)
-    /// - Distrugge il canale MPSC azzerando il sender (ws_tx = None)
-    /// - Rilascia il socket TCP sottostante (inviando FIN al server)
-    pub fn disconnect_ws(&self) {
-        // 1. Ferma e distrugge il task di tracking
-        self.stop_tracking();
-
-        // 2. Ferma e distrugge il task di trasmissione
+        // 2. Ferma e distrugge il task di trasmissione (Task 1)
         if let Ok(mut guard) = self.send_abort.lock() {
             if let Some(handle) = guard.take() {
                 handle.abort();
@@ -61,7 +55,7 @@ impl AppState {
             }
         }
 
-        // 3. Ferma e distrugge il task di ricezione
+        // 3. Ferma e distrugge il task di ricezione (Task 2)
         if let Ok(mut guard) = self.recv_abort.lock() {
             if let Some(handle) = guard.take() {
                 handle.abort();

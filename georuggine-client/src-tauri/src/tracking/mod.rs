@@ -12,9 +12,8 @@ pub use services::tracking_service::*;
 pub async fn start_background_tracking(
     app_handle: &tauri::AppHandle,
     state: &crate::state::AppState,
-    user_id: i64,
 ) -> Result<(), String> {
-    TrackingService::start_background_tracking(app_handle, state, user_id).await
+    TrackingService::start_background_tracking(app_handle, state).await
 }
 
 pub fn load_coordinates() -> Vec<(i64, i64)> {

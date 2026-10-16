@@ -2,7 +2,6 @@ use crate::state::AppState;
 use crate::tracking::api::dto::PositionUpdate;
 use crate::tracking::repository::coordinate_repository::CoordinateRepository;
 use crate::websocket::api::dto::ClientIncomingMessage;
-use chrono::Utc;
 use std::time::Duration;
 use tauri::Emitter;
 
@@ -12,10 +11,7 @@ impl TrackingService {
     pub async fn start_background_tracking(
         app_handle: &tauri::AppHandle,
         state: &AppState,
-        user_id: i64,
     ) -> Result<(), String> {
-        state.stop_tracking();
-
         let coordinates = CoordinateRepository::load_coordinates();
         let app_clone = app_handle.clone();
         let state_clone = state.clone();
@@ -38,7 +34,6 @@ impl TrackingService {
                 let pos = PositionUpdate {
                     x_coord: x,
                     y_coord: y,
-                    timestamp: Utc::now().to_rfc3339(),
                 };
 
                 // Invia la posizione sul canale condiviso MPSC verso il Task 1
@@ -48,8 +43,7 @@ impl TrackingService {
                 }
 
                 println!(
-                    "[Tracking] Inviata posizione (User {user_id}): x={x}, y={y}, time={}",
-                    pos.timestamp
+                    "[Tracking] Inviata posizione: x={x}, y={y}"
                 );
 
                 let _ = app_clone.emit("local-position-updated", pos);
@@ -59,6 +53,9 @@ impl TrackingService {
         .abort_handle();
 
         if let Ok(mut guard) = state.tracking_abort.lock() {
+            if let Some(old) = guard.take() {
+                old.abort();
+            }
             *guard = Some(task_handle);
         }
 
