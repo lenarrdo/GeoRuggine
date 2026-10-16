@@ -32,39 +32,8 @@ export function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Messaggi iniziali corrispondenti al mockup per una visualizzazione fedele
-  const [messages, setMessages] = useState<UiMessage[]>(() => [
-    {
-      id: "init-1",
-      isSelf: true,
-      senderName: "Tu",
-      text: "Ciao! Sono Luca, tutto ok?",
-      time: "14:31",
-      delivered: true,
-    },
-    {
-      id: "init-2",
-      isSelf: false,
-      senderName: "Server",
-      text: "Benvenuto su GeoRuggine!\nIl tuo client è connesso correttamente al server.",
-      time: "14:32",
-    },
-    {
-      id: "init-3",
-      isSelf: true,
-      senderName: "Tu",
-      text: "Perfetto, grazie!",
-      time: "14:32",
-      delivered: true,
-    },
-    {
-      id: "init-4",
-      isSelf: false,
-      senderName: "Server",
-      text: "Ottimo! Se hai bisogno di assistenza, puoi scrivermi in qualsiasi momento.",
-      time: "14:33",
-    },
-  ]);
+  // Inizializza la cronologia messaggi vuota
+  const [messages, setMessages] = useState<UiMessage[]>([]);
 
   // Controlla se c'è già una sessione attiva all'avvio
   useEffect(() => {

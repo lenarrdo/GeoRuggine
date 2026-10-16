@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Paperclip, Terminal, Send } from "lucide-react";
+import { Paperclip, Terminal } from "lucide-react";
 
 interface ChatInputProps {
   onSendMessage: (text: string) => Promise<void>;
@@ -78,7 +78,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           title="Invia messaggio"
           disabled={disabled || isSending || !text.trim()}
         >
-          <Send size={16} />
+          <i className="bi bi-arrow-right fs-5"></i>
         </button>
       </form>
     </div>
