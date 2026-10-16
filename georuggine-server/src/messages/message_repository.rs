@@ -2,6 +2,7 @@ use sqlx::SqlitePool;
 
 use crate::messages::{PositionUpdate, TextMessage};
 
+#[derive(Clone)]
 pub struct MessageRepository {
     db_pool: SqlitePool,
 }
@@ -11,11 +12,17 @@ impl MessageRepository {
         MessageRepository { db_pool }
     }
 
-    pub async fn save_text_message(&self, msg: &TextMessage) -> Result<(), sqlx::Error> {
+    pub async fn save_text_message(
+        &self,
+        sender_id: i64,
+        receiver_id: Option<i64>,
+        msg: &TextMessage,
+        timestamp: &str,
+    ) -> Result<(), sqlx::Error> {
         sqlx::query("INSERT INTO messages (sender_id, receiver_id, timestamp, contents) VALUES (?, ?, ?, ?);")
-            .bind(msg.sender_id)
-            .bind(msg.receiver_id)
-            .bind(&msg.timestamp)
+            .bind(sender_id)
+            .bind(receiver_id)
+            .bind(timestamp)
             .bind(&msg.contents)
             .execute(&self.db_pool)
             .await?;
@@ -23,14 +30,19 @@ impl MessageRepository {
         Ok(())
     }
 
-    pub async fn save_position(&self, position: &PositionUpdate) -> Result<(), sqlx::Error> {
+    pub async fn save_position(
+        &self,
+        user_id: i64,
+        position: &PositionUpdate,
+        timestamp: &str,
+    ) -> Result<(), sqlx::Error> {
         sqlx::query(
             "INSERT INTO positions (user_id, x_coord, y_coord, timestamp) VALUES (?, ?, ?, ?);",
         )
-        .bind(position.sender_id)
+        .bind(user_id)
         .bind(position.x_coord)
         .bind(position.y_coord)
-        .bind(&position.timestamp)
+        .bind(timestamp)
         .execute(&self.db_pool)
         .await?;
 

@@ -10,20 +10,18 @@ pub enum ClientIncomingMessage {
     Text(TextMessage),
 }
 
-/// Modello per i messaggi di testo (scambiati tra client e server, o inviati dal server in broadcast)
+/// Modello per i messaggi di testo (il client non invia timestamp; il server può includerlo nelle comunicazioni verso il client)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TextMessage {
-    pub sender_id: i64,
-    pub receiver_id: i64,
     pub contents: String,
-    pub timestamp: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub timestamp: Option<String>,
 }
 
-/// Coordinate geografiche/emulate inviate dal client al server
+/// Coordinate geografiche inviate dal client al server (il client invia solo coordinate pure)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PositionUpdate {
-    pub sender_id: i64,
     pub x_coord: i64,
     pub y_coord: i64,
-    pub timestamp: String,
 }
+
