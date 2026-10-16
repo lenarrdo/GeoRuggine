@@ -6,10 +6,25 @@ use ratatui::{
     widgets::{Block, List, ListItem, ListState},
 };
 
+pub enum UserStatus {
+    Moving,
+    Still,
+}
+
+impl UserStatus {
+    pub fn to_color(&self) -> Color {
+        match self {
+            UserStatus::Still => Color::Gray,
+            UserStatus::Moving => Color::LightGreen,
+        }
+    }
+}
+
 pub struct User {
     pub id: u32,
     pub username: String,
     selected: bool,
+    status: UserStatus,
 }
 
 impl User {
@@ -18,6 +33,9 @@ impl User {
             id,
             username: username.to_owned(),
             selected: false,
+            // new users are added the moment they send a message,
+            // meaning that they are online and moving.
+            status: UserStatus::Moving,
         }
     }
 }
@@ -27,7 +45,7 @@ impl From<&User> for ListItem<'_> {
         let prefix = if user.selected { "✗" } else { "☐" };
         ListItem::new(Line::styled(
             format!("{prefix} {}", user.username),
-            Color::Blue,
+            user.status.to_color(),
         ))
     }
 }
