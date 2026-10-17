@@ -2,7 +2,7 @@ pub mod message_popup;
 pub mod user_info_popup;
 pub mod user_list;
 
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use crossterm::event::{Event as CrosstermEvent, EventStream, KeyCode, KeyEvent};
 use futures::StreamExt;
@@ -12,7 +12,7 @@ use ratatui::{
     style::{Color, Style, palette::tailwind::SLATE},
     widgets::{Block, BorderType, Paragraph},
 };
-use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::{Receiver, Sender};
 
 use crate::{
     tui::{
@@ -28,24 +28,35 @@ const TEXT_FG_COLOR: Color = SLATE.c200;
 pub enum AppEvent {
     ClientConnected(User),
     ClientDisconnected(u32),
+    NewPosition(u32),
+    Tick,
 }
 
 pub struct App {
+    // exit condition
     exit: bool,
+
+    // widgets
     user_list: UserList,
     message_popup: MessagePopup,
     user_info_popup: UserInfoPopup,
+
+    // communication
+    tx: Sender<AppEvent>,
     rx: Receiver<AppEvent>,
+
+    // domain info
     clients: Arc<ClientsList>,
 }
 
 impl App {
-    pub fn new(rx: Receiver<AppEvent>, clients: Arc<ClientsList>) -> Self {
+    pub fn new(tx: Sender<AppEvent>, rx: Receiver<AppEvent>, clients: Arc<ClientsList>) -> Self {
         App {
             exit: false,
             user_list: UserList::default(),
             message_popup: MessagePopup::default(),
             user_info_popup: UserInfoPopup::default(),
+            tx,
             rx,
             clients,
         }
@@ -56,6 +67,15 @@ impl App {
         mut terminal: DefaultTerminal,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut reader = EventStream::new();
+
+        let tx = self.tx.clone();
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(1));
+            loop {
+                interval.tick().await;
+                tx.send(AppEvent::Tick).await.unwrap();
+            }
+        });
 
         while !self.exit {
             terminal.draw(|frame| self.render(frame))?;
@@ -72,6 +92,8 @@ impl App {
                     match app_event {
                         AppEvent::ClientConnected(user) => self.user_list.add_user(user),
                         AppEvent::ClientDisconnected(user_id) => self.user_list.remove_user(user_id),
+                        AppEvent::NewPosition(user_id) => self.user_list.set_active(user_id),
+                        AppEvent::Tick => self.user_list.scan_inactive(),
                     }
                 }
             }

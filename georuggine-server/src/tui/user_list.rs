@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use chrono::{DateTime, Duration, Local};
 use ratatui::{
     Frame,
     layout::Rect,
@@ -44,8 +45,9 @@ impl UserStatus {
 pub struct User {
     pub id: u32,
     pub username: String,
-    selected: bool,
     pub status: UserStatus,
+    pub last_timestamp: Option<DateTime<Local>>,
+    selected: bool,
 }
 
 impl User {
@@ -54,9 +56,8 @@ impl User {
             id,
             username: username.to_owned(),
             selected: false,
-            // new users are added the moment they send a message,
-            // meaning that they are online and moving.
-            status: UserStatus::Moving,
+            status: UserStatus::Still,
+            last_timestamp: None,
         }
     }
 }
@@ -173,6 +174,25 @@ impl UserList {
 
     pub fn remove_user(&mut self, user_id: u32) {
         self.users.retain(|u| u.id != user_id);
+    }
+
+    pub fn set_active(&mut self, user_id: u32) {
+        if let Some(user) = self.users.iter_mut().find(|user| user.id == user_id) {
+            user.last_timestamp = Some(Local::now());
+            user.status = UserStatus::Moving;
+        }
+    }
+
+    pub fn scan_inactive(&mut self) {
+        const INACTIVE_THRESHOLD: Duration = Duration::minutes(3);
+        // const INACTIVE_THRESHOLD: Duration = Duration::seconds(3);
+        self.users.iter_mut().for_each(|user| {
+            if let Some(timestamp) = user.last_timestamp
+                && Local::now().signed_duration_since(timestamp) > INACTIVE_THRESHOLD
+            {
+                user.status = UserStatus::Still;
+            }
+        });
     }
 
     pub fn get_hovered_user(&mut self) -> Option<User> {

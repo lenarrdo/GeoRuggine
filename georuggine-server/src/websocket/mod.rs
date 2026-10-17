@@ -91,7 +91,8 @@ pub async fn handle_socket(
         }
     });
 
-    let clients_copy = Arc::clone(&clients);
+    let clients_clone = Arc::clone(&clients);
+    let tui_tx_clone = tui_tx.clone();
     let mut recv_task = tokio::spawn(async move {
         let mut cnt = 0;
 
@@ -101,7 +102,11 @@ pub async fn handle_socket(
             if result.is_break() {
                 break;
             } else if let Some(pos) = result.continue_value().unwrap() {
-                clients_copy.record_position(user_id, pos).await;
+                clients_clone.record_position(user_id, pos).await;
+                tui_tx_clone
+                    .send(AppEvent::NewPosition(user_id))
+                    .await
+                    .unwrap();
             }
         }
 

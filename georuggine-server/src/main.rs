@@ -35,7 +35,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .route(&format!("{BASE_URL}/auth/login"), post(handle_login))
         .route(&format!("{BASE_URL}/ws"), get(ws_handler))
-        .with_state(AppState::new(db_pool, Arc::clone(&list), tx));
+        .with_state(AppState::new(db_pool, Arc::clone(&list), tx.clone()));
 
     let listener = tokio::net::TcpListener::bind(format!("{HOST}:{PORT}"))
         .await
@@ -53,7 +53,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let terminal = ratatui::init();
-    let app_result = App::new(rx, list).run(terminal).await;
+    let app_result = App::new(tx, rx, list).run(terminal).await;
     ratatui::restore();
 
     app_result
