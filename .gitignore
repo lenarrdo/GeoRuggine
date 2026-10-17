@@ -3,3 +3,7 @@
 
 # ignore database (for now)
 *.sqlite
+
+# direnv
+.envrc
+.direnv/
