@@ -5,9 +5,12 @@ use ratatui::{
     widgets::{Block, Clear, Paragraph},
 };
 
+use crate::tui::user_list::User;
+
 #[derive(Default)]
 pub struct UserInfoPopup {
     pub visible: bool,
+    pub user: User,
     pub avg_speed: f64,
 }
 
@@ -23,8 +26,8 @@ impl UserInfoPopup {
         frame.render_widget(Clear, centered_area);
 
         let info = format!(
-            "ID: {}\nUsername: {}\nAverage Speed: {} km/h\n",
-            1, "test", self.avg_speed
+            "ID: {}\nUsername: {}\nStatus: {}\nAverage Speed: {:.2} km/h\n",
+            self.user.id, self.user.username, self.user.status, self.avg_speed
         );
         let paragraph = Paragraph::new(info).block(block);
 

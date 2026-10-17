@@ -92,6 +92,8 @@ impl App {
                 }
             }
             return;
+        } else if self.user_info_popup.visible {
+            return self.user_info_popup.handle_key(key);
         }
 
         match key.code {
@@ -108,6 +110,7 @@ impl App {
                         .get_avg_speed(user.id)
                         .await
                         .unwrap_or_default();
+                    self.user_info_popup.user = user;
 
                     self.user_info_popup.visible = true
                 }

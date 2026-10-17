@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use ratatui::{
     Frame,
     layout::Rect,
@@ -12,6 +14,23 @@ pub enum UserStatus {
     Still,
 }
 
+impl Default for UserStatus {
+    fn default() -> Self {
+        UserStatus::Still
+    }
+}
+
+impl Display for UserStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let str = match self {
+            UserStatus::Still => "Still",
+            UserStatus::Moving => "Moving",
+        };
+
+        write!(f, "{str}")
+    }
+}
+
 impl UserStatus {
     pub fn to_color(&self) -> Color {
         match self {
@@ -21,12 +40,12 @@ impl UserStatus {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct User {
     pub id: u32,
     pub username: String,
     selected: bool,
-    status: UserStatus,
+    pub status: UserStatus,
 }
 
 impl User {
