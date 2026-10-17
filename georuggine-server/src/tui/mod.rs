@@ -27,6 +27,7 @@ const TEXT_FG_COLOR: Color = SLATE.c200;
 
 pub enum AppEvent {
     ClientConnected(User),
+    ClientDisconnected(u32),
 }
 
 pub struct App {
@@ -69,10 +70,8 @@ impl App {
                 }
                 Some(app_event) = self.rx.recv() => {
                     match app_event {
-                        AppEvent::ClientConnected(user) => {
-                            self.user_list.add_user(user);
-                        }
-                        // _ => {}
+                        AppEvent::ClientConnected(user) => self.user_list.add_user(user),
+                        AppEvent::ClientDisconnected(user_id) => self.user_list.remove_user(user_id),
                     }
                 }
             }

@@ -61,26 +61,26 @@ pub async fn ws_handler(
         ));
     }
 
-    tx.send(AppEvent::ClientConnected(User::new(
-        claims.user_id,
-        &claims.username,
-    )))
-    .await
-    .unwrap(); // not sure about this
-
-    Ok(ws.on_upgrade(move |socket| handle_socket(socket, claims.user_id, clients)))
+    let uname = claims.username.clone();
+    Ok(ws.on_upgrade(move |socket| handle_socket(socket, claims.user_id, uname, clients, tx)))
 }
 
 /// Gestisce l'intero ciclo di vita di una singola connessione WebSocket attiva.
-pub async fn handle_socket(socket: WebSocket, user_id: u32, clients: Arc<ClientsList>) {
+pub async fn handle_socket(
+    socket: WebSocket,
+    user_id: u32,
+    username: String,
+    clients: Arc<ClientsList>,
+    tui_tx: Sender<AppEvent>,
+) {
     let (mut ws_sender, mut ws_receiver) = socket.split();
     let (tx, mut rx) = mpsc::unbounded_channel::<TextMessage>();
 
-    let _nof_connected_users = clients.add(user_id, ConnectedClient::new(tx)).await;
-    // println!(
-    //     "Client {user_id} connesso (totale attivi: {})",
-    //     nof_connected_users
-    // );
+    clients.add(user_id, ConnectedClient::new(tx)).await;
+    tui_tx
+        .send(AppEvent::ClientConnected(User::new(user_id, &username)))
+        .await
+        .unwrap();
 
     let mut send_task = tokio::spawn(async move {
         while let Some(msg) = rx.recv().await {
@@ -124,13 +124,11 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, clients: Arc<Clients
         }
     }
 
-    let nof_connected_users = clients.remove(user_id).await;
-    println!(
-        "Client {user_id} disconnesso (rimanenti: {})",
-        nof_connected_users
-    );
-
-    println!("WebSocket context {user_id} destroyed");
+    clients.remove(user_id).await;
+    tui_tx
+        .send(AppEvent::ClientDisconnected(user_id))
+        .await
+        .unwrap();
 }
 
 /// Elabora i singoli messaggi ricevuti dal client via WebSocket.

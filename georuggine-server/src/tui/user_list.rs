@@ -171,6 +171,10 @@ impl UserList {
         }
     }
 
+    pub fn remove_user(&mut self, user_id: u32) {
+        self.users.retain(|u| u.id != user_id);
+    }
+
     pub fn get_hovered_user(&mut self) -> Option<User> {
         if let Some(idx) = self.state.selected() {
             return Some(self.users[idx].clone());
