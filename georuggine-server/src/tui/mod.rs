@@ -60,8 +60,12 @@ impl App {
             terminal.draw(|frame| self.render(frame))?;
 
             tokio::select! {
-                Some(Ok(CrosstermEvent::Key(key))) = reader.next() => {
-                    self.handle_key(key).await;
+                Some(Ok(crossterm_event)) = reader.next() => {
+                    match crossterm_event {
+                        CrosstermEvent::Key(key) =>self.handle_key(key).await,
+                        _ => {}
+                    }
+
                 }
                 Some(app_event) = self.rx.recv() => {
                     match app_event {
@@ -115,7 +119,7 @@ impl App {
 
     fn render(&mut self, frame: &mut Frame) {
         let [main_content, footer] =
-            Layout::vertical([Constraint::Fill(1), Constraint::Length(1)]).areas(frame.area());
+            Layout::vertical([Constraint::Fill(1), Constraint::Max(1)]).areas(frame.area());
         let [user_bar, info] =
             Layout::horizontal([Constraint::Percentage(25), Constraint::Fill(1)])
                 .areas(main_content);
