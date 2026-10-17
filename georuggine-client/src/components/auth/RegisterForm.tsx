@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { User, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Card, Form, Row, Col, Button, Alert, InputGroup, Spinner } from "react-bootstrap";
+import { User, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { RegisterFormData } from "../../types/auth";
 
 interface RegisterFormProps {
@@ -56,83 +57,84 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   const displayedError = validationError || errorMessage;
 
   return (
-    <div className="card bg-dark text-light border-secondary shadow-lg p-3 auth-form-card">
-      <div className="card-body">
+    <Card className="bg-dark text-light border-secondary shadow-lg p-3 auth-form-card">
+      <Card.Body>
         <div className="auth-form-header mb-4 border-bottom border-secondary pb-3">
-          <h2 className="card-title h4 fw-bold font-monospace text-light mb-1 auth-title">
+          <Card.Title as="h2" className="h4 fw-bold font-monospace text-light mb-1 auth-title">
             Crea il tuo account
-          </h2>
-          <p className="card-subtitle text-secondary small font-monospace auth-subtitle">
+          </Card.Title>
+          <Card.Subtitle className="text-secondary small font-monospace auth-subtitle">
             Compila i campi qui sotto per registrarti
-          </p>
+          </Card.Subtitle>
         </div>
 
         {displayedError && (
-          <div className="alert alert-danger py-2 px-3 small font-monospace d-flex align-items-center mb-3">
+          <Alert variant="danger" className="py-2 px-3 small font-monospace d-flex align-items-center mb-3">
             <span>{displayedError}</span>
-          </div>
+          </Alert>
         )}
 
-        <form className="auth-form" onSubmit={handleSubmit}>
-          {/* Nome e Cognome affiancati in row */}
-          <div className="row g-2 mb-3">
-            <div className="col-6">
-              <label className="form-label small text-secondary font-monospace mb-1" htmlFor="register-nome">
-                Nome
-              </label>
-              <div className="input-group">
-                <span className="input-group-text bg-dark border-secondary text-secondary">
-                  <User size={16} />
-                </span>
-                <input
-                  id="register-nome"
-                  type="text"
-                  className="form-control bg-dark text-light border-secondary font-monospace"
-                  placeholder="Nome"
-                  value={nome}
-                  onChange={(e) => setNome(e.target.value)}
-                  required
-                  autoComplete="given-name"
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-            <div className="col-6">
-              <label className="form-label small text-secondary font-monospace mb-1" htmlFor="register-cognome">
-                Cognome
-              </label>
-              <div className="input-group">
-                <span className="input-group-text bg-dark border-secondary text-secondary">
-                  <User size={16} />
-                </span>
-                <input
-                  id="register-cognome"
-                  type="text"
-                  className="form-control bg-dark text-light border-secondary font-monospace"
-                  placeholder="Cognome"
-                  value={cognome}
-                  onChange={(e) => setCognome(e.target.value)}
-                  required
-                  autoComplete="family-name"
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-          </div>
+        <Form className="auth-form" onSubmit={handleSubmit}>
+          {/* Nome e Cognome affiancati in Row / Col adattivi */}
+          <Row className="g-2 mb-3">
+            <Col xs={12} sm={6}>
+              <Form.Group controlId="register-nome">
+                <Form.Label className="small text-secondary font-monospace mb-1">
+                  Nome
+                </Form.Label>
+                <InputGroup>
+                  <InputGroup.Text className="bg-dark border-secondary text-secondary">
+                    <User size={16} />
+                  </InputGroup.Text>
+                  <Form.Control
+                    type="text"
+                    className="bg-dark text-light border-secondary font-monospace"
+                    placeholder="Nome"
+                    value={nome}
+                    onChange={(e) => setNome(e.target.value)}
+                    required
+                    autoComplete="given-name"
+                    disabled={isLoading}
+                  />
+                </InputGroup>
+              </Form.Group>
+            </Col>
+            <Col xs={12} sm={6}>
+              <Form.Group controlId="register-cognome">
+                <Form.Label className="small text-secondary font-monospace mb-1">
+                  Cognome
+                </Form.Label>
+                <InputGroup>
+                  <InputGroup.Text className="bg-dark border-secondary text-secondary">
+                    <User size={16} />
+                  </InputGroup.Text>
+                  <Form.Control
+                    type="text"
+                    className="bg-dark text-light border-secondary font-monospace"
+                    placeholder="Cognome"
+                    value={cognome}
+                    onChange={(e) => setCognome(e.target.value)}
+                    required
+                    autoComplete="family-name"
+                    disabled={isLoading}
+                  />
+                </InputGroup>
+              </Form.Group>
+            </Col>
+          </Row>
 
           {/* Campo Email */}
-          <div className="mb-3">
-            <label className="form-label small text-secondary font-monospace mb-1" htmlFor="register-email">
+          <Form.Group className="mb-3" controlId="register-email">
+            <Form.Label className="small text-secondary font-monospace mb-1">
               Email
-            </label>
-            <div className="input-group">
-              <span className="input-group-text bg-dark border-secondary text-secondary">
+            </Form.Label>
+            <InputGroup>
+              <InputGroup.Text className="bg-dark border-secondary text-secondary">
                 <Mail size={16} />
-              </span>
-              <input
-                id="register-email"
+              </InputGroup.Text>
+              <Form.Control
                 type="email"
-                className="form-control bg-dark text-light border-secondary font-monospace"
+                className="bg-dark text-light border-secondary font-monospace"
                 placeholder="nome@dominio.it"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -140,22 +142,21 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 autoComplete="email"
                 disabled={isLoading}
               />
-            </div>
-          </div>
+            </InputGroup>
+          </Form.Group>
 
           {/* Campo Password */}
-          <div className="mb-3">
-            <label className="form-label small text-secondary font-monospace mb-1" htmlFor="register-password">
+          <Form.Group className="mb-3" controlId="register-password">
+            <Form.Label className="small text-secondary font-monospace mb-1">
               Password
-            </label>
-            <div className="input-group">
-              <span className="input-group-text bg-dark border-secondary text-secondary">
+            </Form.Label>
+            <InputGroup>
+              <InputGroup.Text className="bg-dark border-secondary text-secondary">
                 <Lock size={16} />
-              </span>
-              <input
-                id="register-password"
+              </InputGroup.Text>
+              <Form.Control
                 type={showPassword ? "text" : "password"}
-                className="form-control bg-dark text-light border-secondary font-monospace"
+                className="bg-dark text-light border-secondary font-monospace"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -163,31 +164,30 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 autoComplete="new-password"
                 disabled={isLoading}
               />
-              <button
-                type="button"
-                className="btn btn-outline-secondary border-secondary text-secondary"
+              <Button
+                variant="outline-secondary"
+                className="border-secondary text-secondary"
                 onClick={() => setShowPassword(!showPassword)}
                 tabIndex={-1}
                 title={showPassword ? "Nascondi password" : "Mostra password"}
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-          </div>
+              </Button>
+            </InputGroup>
+          </Form.Group>
 
           {/* Campo Conferma Password */}
-          <div className="mb-4">
-            <label className="form-label small text-secondary font-monospace mb-1" htmlFor="register-confirm-password">
+          <Form.Group className="mb-4" controlId="register-confirm-password">
+            <Form.Label className="small text-secondary font-monospace mb-1">
               Conferma password
-            </label>
-            <div className="input-group">
-              <span className="input-group-text bg-dark border-secondary text-secondary">
+            </Form.Label>
+            <InputGroup>
+              <InputGroup.Text className="bg-dark border-secondary text-secondary">
                 <Lock size={16} />
-              </span>
-              <input
-                id="register-confirm-password"
+              </InputGroup.Text>
+              <Form.Control
                 type={showConfirmPassword ? "text" : "password"}
-                className="form-control bg-dark text-light border-secondary font-monospace"
+                className="bg-dark text-light border-secondary font-monospace"
                 placeholder="••••••••"
                 value={confermaPassword}
                 onChange={(e) => setConfermaPassword(e.target.value)}
@@ -195,48 +195,49 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 autoComplete="new-password"
                 disabled={isLoading}
               />
-              <button
-                type="button"
-                className="btn btn-outline-secondary border-secondary text-secondary"
+              <Button
+                variant="outline-secondary"
+                className="border-secondary text-secondary"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 tabIndex={-1}
                 title={showConfirmPassword ? "Nascondi password" : "Mostra password"}
               >
                 {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-          </div>
+              </Button>
+            </InputGroup>
+          </Form.Group>
 
           {/* Bottone Registrati */}
-          <button
+          <Button
             type="submit"
-            className="btn btn-primary w-100 py-2 font-monospace fw-semibold shadow-sm mb-3 auth-submit-btn"
+            variant="primary"
+            className="w-100 py-2 font-monospace fw-semibold shadow-sm mb-3 auth-submit-btn"
             disabled={isLoading || !nome.trim() || !cognome.trim() || !email.trim() || !password}
           >
             {isLoading ? (
               <span className="d-flex align-items-center justify-content-center gap-2">
-                <Loader2 size={18} className="spinner" />
+                <Spinner animation="border" size="sm" />
                 Creazione account...
               </span>
             ) : (
               "Registrati"
             )}
-          </button>
+          </Button>
 
           {/* Link verso Login */}
           <div className="text-center font-monospace small text-secondary">
             <span>Hai già un account? </span>
-            <button
-              type="button"
-              className="btn btn-link text-info p-0 font-monospace text-decoration-none fw-semibold"
+            <Button
+              variant="link"
+              className="text-info p-0 font-monospace text-decoration-none fw-semibold"
               onClick={onSwitchToLogin}
               disabled={isLoading}
             >
               Accedi
-            </button>
+            </Button>
           </div>
-        </form>
-      </div>
-    </div>
+        </Form>
+      </Card.Body>
+    </Card>
   );
 };

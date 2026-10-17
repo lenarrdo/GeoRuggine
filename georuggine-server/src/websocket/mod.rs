@@ -150,14 +150,13 @@ pub async fn process_message(
                         }
                     }
                     ClientIncomingMessage::Text(chat_msg) => {
-                        let timestamp = chrono::Utc::now().to_rfc3339();
                         println!(
-                            ">>> [MESSAGGIO AL SERVER] Da user_id {user_id} ({timestamp}): `{}`",
-                            chat_msg.contents
+                            ">>> [MESSAGGIO AL SERVER] Da user_id {user_id} ({}): `{}`",
+                            chat_msg.timestamp, chat_msg.contents
                         );
 
-                        // Il server associa sender_id = user_id, receiver_id = None (Centrale/Server) e timestamp calcolato dal server
-                        if let Err(e) = message_repo.save_text_message(user_id, None, &chat_msg, &timestamp).await {
+                        // Il server associa sender_id = user_id, receiver_id = None (Centrale/Server) e timestamp fornito dal client
+                        if let Err(e) = message_repo.save_text_message(user_id, None, &chat_msg, &chat_msg.timestamp).await {
                             eprintln!("Errore salvataggio messaggio nel DB per user_id {user_id}: {e}");
                         }
                     }

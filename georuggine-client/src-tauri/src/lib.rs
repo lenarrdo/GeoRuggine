@@ -1,7 +1,6 @@
 pub mod auth;
 pub mod messages;
 pub mod state;
-pub mod tracking;
 pub mod websocket;
 
 use state::AppState;

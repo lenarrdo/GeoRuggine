@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Card, Form, Button, Alert, InputGroup, Spinner } from "react-bootstrap";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { LoginFormData } from "../../types/auth";
 
 interface LoginFormProps {
@@ -7,6 +8,7 @@ interface LoginFormProps {
   onSwitchToRegister: () => void;
   isLoading: boolean;
   errorMessage: string | null;
+  successMessage?: string | null;
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({
@@ -14,6 +16,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   onSwitchToRegister,
   isLoading,
   errorMessage,
+  successMessage,
 }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,37 +29,42 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   };
 
   return (
-    <div className="card bg-dark text-light border-secondary shadow-lg p-3 auth-form-card">
-      <div className="card-body">
+    <Card className="bg-dark text-light border-secondary shadow-lg p-3 auth-form-card">
+      <Card.Body>
         <div className="auth-form-header mb-4 border-bottom border-secondary pb-3">
-          <h2 className="card-title h4 fw-bold font-monospace text-light mb-1 auth-title">
+          <Card.Title as="h2" className="h4 fw-bold font-monospace text-light mb-1 auth-title">
             Accedi al tuo account
-          </h2>
-          <p className="card-subtitle text-secondary small font-monospace auth-subtitle">
+          </Card.Title>
+          <Card.Subtitle className="text-secondary small font-monospace auth-subtitle">
             Inserisci le tue credenziali per continuare
-          </p>
+          </Card.Subtitle>
         </div>
 
-        {errorMessage && (
-          <div className="alert alert-danger py-2 px-3 small font-monospace d-flex align-items-center mb-3">
-            <span>{errorMessage}</span>
-          </div>
+        {successMessage && (
+          <Alert variant="success" className="py-2 px-3 small font-monospace d-flex align-items-center mb-3">
+            <span>{successMessage}</span>
+          </Alert>
         )}
 
-        <form className="auth-form" onSubmit={handleSubmit}>
+        {errorMessage && (
+          <Alert variant="danger" className="py-2 px-3 small font-monospace d-flex align-items-center mb-3">
+            <span>{errorMessage}</span>
+          </Alert>
+        )}
+
+        <Form className="auth-form" onSubmit={handleSubmit}>
           {/* Campo Email */}
-          <div className="mb-3">
-            <label className="form-label small text-secondary font-monospace mb-1" htmlFor="login-email">
+          <Form.Group className="mb-3" controlId="login-email">
+            <Form.Label className="small text-secondary font-monospace mb-1">
               Email
-            </label>
-            <div className="input-group">
-              <span className="input-group-text bg-dark border-secondary text-secondary">
+            </Form.Label>
+            <InputGroup>
+              <InputGroup.Text className="bg-dark border-secondary text-secondary">
                 <Mail size={18} />
-              </span>
-              <input
-                id="login-email"
+              </InputGroup.Text>
+              <Form.Control
                 type="text"
-                className="form-control bg-dark text-light border-secondary font-monospace"
+                className="bg-dark text-light border-secondary font-monospace"
                 placeholder="nome@dominio.it"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -64,22 +72,21 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 autoComplete="email"
                 disabled={isLoading}
               />
-            </div>
-          </div>
+            </InputGroup>
+          </Form.Group>
 
           {/* Campo Password con Toggle Visibilità */}
-          <div className="mb-4">
-            <label className="form-label small text-secondary font-monospace mb-1" htmlFor="login-password">
+          <Form.Group className="mb-4" controlId="login-password">
+            <Form.Label className="small text-secondary font-monospace mb-1">
               Password
-            </label>
-            <div className="input-group">
-              <span className="input-group-text bg-dark border-secondary text-secondary">
+            </Form.Label>
+            <InputGroup>
+              <InputGroup.Text className="bg-dark border-secondary text-secondary">
                 <Lock size={18} />
-              </span>
-              <input
-                id="login-password"
+              </InputGroup.Text>
+              <Form.Control
                 type={showPassword ? "text" : "password"}
-                className="form-control bg-dark text-light border-secondary font-monospace"
+                className="bg-dark text-light border-secondary font-monospace"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -87,48 +94,49 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 autoComplete="current-password"
                 disabled={isLoading}
               />
-              <button
-                type="button"
-                className="btn btn-outline-secondary border-secondary text-secondary"
+              <Button
+                variant="outline-secondary"
+                className="border-secondary text-secondary"
                 onClick={() => setShowPassword(!showPassword)}
                 tabIndex={-1}
                 title={showPassword ? "Nascondi password" : "Mostra password"}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
+              </Button>
+            </InputGroup>
+          </Form.Group>
 
           {/* Bottone Accedi */}
-          <button
+          <Button
             type="submit"
-            className="btn btn-primary w-100 py-2 font-monospace fw-semibold shadow-sm mb-3 auth-submit-btn"
+            variant="primary"
+            className="w-100 py-2 font-monospace fw-semibold shadow-sm mb-3 auth-submit-btn"
             disabled={isLoading || !email.trim() || !password}
           >
             {isLoading ? (
               <span className="d-flex align-items-center justify-content-center gap-2">
-                <Loader2 size={18} className="spinner" />
+                <Spinner animation="border" size="sm" />
                 Accesso in corso...
               </span>
             ) : (
               "Accedi"
             )}
-          </button>
+          </Button>
 
           {/* Link verso Registrazione */}
           <div className="text-center font-monospace small text-secondary">
             <span>Non hai un account? </span>
-            <button
-              type="button"
-              className="btn btn-link text-info p-0 font-monospace text-decoration-none fw-semibold"
+            <Button
+              variant="link"
+              className="text-info p-0 font-monospace text-decoration-none fw-semibold"
               onClick={onSwitchToRegister}
               disabled={isLoading}
             >
               Registrati
-            </button>
+            </Button>
           </div>
-        </form>
-      </div>
-    </div>
+        </Form>
+      </Card.Body>
+    </Card>
   );
 };

@@ -1,5 +1,5 @@
-use crate::auth::domain::session::UserSession;
-use crate::websocket::api::dto::ClientIncomingMessage;
+use crate::auth::UserSession;
+use crate::messages::ClientIncomingMessage;
 use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc;
 use tokio::task::AbortHandle;
@@ -21,6 +21,23 @@ pub struct AppState {
 }
 
 impl AppState {
+    pub fn save_session(&self, session: UserSession) -> Result<(), String> {
+        let mut guard = self.session.lock().map_err(|e| e.to_string())?;
+        *guard = Some(session);
+        Ok(())
+    }
+
+    pub fn clear_session(&self) -> Result<(), String> {
+        let mut guard = self.session.lock().map_err(|e| e.to_string())?;
+        *guard = None;
+        Ok(())
+    }
+
+    pub fn get_session(&self) -> Result<Option<UserSession>, String> {
+        let guard = self.session.lock().map_err(|e| e.to_string())?;
+        Ok(guard.clone())
+    }
+
     /// Inserisce un messaggio nel canale MPSC condiviso
     pub fn send_ws_message(&self, msg: ClientIncomingMessage) -> Result<(), String> {
         let guard = self.ws_tx.lock().map_err(|e| e.to_string())?;

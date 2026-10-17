@@ -1,5 +1,5 @@
 import React from "react";
-import { Server } from "lucide-react";
+import { Server, User } from "lucide-react";
 import { UiMessage } from "../../types/chat";
 
 interface ChatMessageItemProps {
@@ -9,13 +9,14 @@ interface ChatMessageItemProps {
 export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({ message }) => {
   if (message.isSelf) {
     return (
-      <div className="d-flex w-100 justify-content-end mb-2 chat-msg-row user-row">
-        <div
-          className="card bg-primary text-white border-0 shadow-sm px-3 py-2 chat-bubble user-bubble"
-          style={{ maxWidth: "70%", borderRadius: "14px 14px 2px 14px" }}
-        >
+      <div className="d-flex w-100 justify-content-end mb-3 chat-msg-row user-row">
+        <div className="chat-bubble user-bubble px-3 py-2">
+          <div className="d-flex align-items-center justify-content-between gap-3 mb-1 bubble-header user-header">
+            <span className="bubble-sender fw-bold">{message.senderName || "Tu"}</span>
+            <User size={13} className="bubble-sender-icon text-white-50" />
+          </div>
           <p className="mb-1 text-break bubble-text">{message.text}</p>
-          <div className="d-flex align-items-center justify-content-end small text-white-50 bubble-meta">
+          <div className="d-flex align-items-center justify-content-end bubble-meta">
             <span className="bubble-time">{message.time}</span>
           </div>
         </div>
@@ -24,16 +25,17 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({ message }) => 
   }
 
   return (
-    <div className="d-flex w-100 justify-content-start align-items-start gap-2 mb-2 chat-msg-row server-row">
-      <div className="bg-secondary-subtle rounded-circle p-2 d-flex align-items-center justify-content-center flex-shrink-0 msg-server-avatar">
-        <Server size={16} className="text-info msg-server-icon" />
+    <div className="d-flex w-100 justify-content-start align-items-start gap-2 mb-3 chat-msg-row server-row">
+      <div className="msg-server-avatar">
+        <Server size={16} className="msg-server-icon" />
       </div>
-      <div
-        className="card bg-dark text-light border-secondary shadow-sm px-3 py-2 chat-bubble server-bubble"
-        style={{ maxWidth: "70%", borderRadius: "14px 14px 14px 2px" }}
-      >
+      <div className="chat-bubble server-bubble px-3 py-2">
+        <div className="d-flex align-items-center justify-content-between gap-3 mb-1 bubble-header server-header">
+          <span className="bubble-sender fw-bold">{message.senderName || "Server"}</span>
+          <span className="badge bg-info-subtle text-info border border-info-subtle px-1 py-0" style={{ fontSize: "11px" }}>CENTRALE</span>
+        </div>
         <p className="mb-1 text-break bubble-text">{message.text}</p>
-        <div className="d-flex justify-content-start small text-secondary bubble-meta">
+        <div className="d-flex justify-content-start bubble-meta">
           <span className="bubble-time">{message.time}</span>
         </div>
       </div>

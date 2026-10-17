@@ -10,12 +10,11 @@ pub enum ClientIncomingMessage {
     Text(TextMessage),
 }
 
-/// Modello per i messaggi di testo (il client non invia timestamp; il server può includerlo nelle comunicazioni verso il client)
+/// Modello per i messaggi di testo (client e server inviano e ricevono entrambi contents e timestamp generato in quel momento)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TextMessage {
     pub contents: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub timestamp: Option<String>,
+    pub timestamp: String,
 }
 
 /// Coordinate geografiche inviate dal client al server (il timestamp viene calcolato dal client)

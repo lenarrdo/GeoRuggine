@@ -1,9 +1,7 @@
-pub mod api;
-pub mod controllers;
-pub(crate) mod domain;
-pub(crate) mod repository;
-pub(crate) mod services;
+pub mod chatmessage;
+pub mod dto;
+pub mod position;
 
-pub use api::dto::*;
-pub use controllers::message_controller::*;
-pub use services::message_service::*;
+pub use chatmessage::*;
+pub use dto::*;
+pub use position::*;

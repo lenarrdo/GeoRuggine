@@ -1,6 +1,17 @@
-use crate::auth::api::dto::{AuthRequest, AuthResponse};
+use crate::auth::models::dto::{AuthRequest, AuthResponse};
 
 pub const SERVER_HTTP_URL: &str = "http://127.0.0.1:3000/api/v1";
+
+fn handle_reqwest_error(e: reqwest::Error) -> String {
+    eprintln!("[AuthService] Dettaglio errore HTTP: {e}");
+    if e.is_connect() {
+        "Impossibile connettersi al server. Riprova più tardi.".to_string()
+    } else if e.is_timeout() {
+        "Il server non risponde entro il tempo limite. Riprova più tardi.".to_string()
+    } else {
+        "Errore di comunicazione con il server. Riprova più tardi.".to_string()
+    }
+}
 
 pub struct AuthService;
 
@@ -15,19 +26,22 @@ impl AuthService {
             .json(&payload)
             .send()
             .await
-            .map_err(|e| format!("Errore di connessione al server: {e}"))?;
+            .map_err(handle_reqwest_error)?;
 
         let status = res.status();
         let body = res
             .json::<AuthResponse>()
             .await
-            .map_err(|e| format!("Errore di parsing risposta JSON: {e}"))?;
+            .map_err(|e| {
+                eprintln!("[AuthService] Errore parsing JSON risposta: {e}");
+                "Risposta non valida ricevuta dal server.".to_string()
+            })?;
 
-        if status.is_success() {
-            Ok(body)
-        } else {
-            Err(body.message)
+        if !status.is_success() {
+            return Err(body.message);
         }
+
+        Ok(body)
     }
 
     pub async fn login(username: String, password: String) -> Result<AuthResponse, String> {
@@ -43,13 +57,16 @@ impl AuthService {
             .json(&payload)
             .send()
             .await
-            .map_err(|e| format!("Errore di connessione al server: {e}"))?;
+            .map_err(handle_reqwest_error)?;
 
         let status = res.status();
         let body = res
             .json::<AuthResponse>()
             .await
-            .map_err(|e| format!("Errore di parsing risposta JSON: {e}"))?;
+            .map_err(|e| {
+                eprintln!("[AuthService] Errore parsing JSON risposta: {e}");
+                "Risposta non valida ricevuta dal server.".to_string()
+            })?;
 
         if !status.is_success() {
             return Err(body.message);

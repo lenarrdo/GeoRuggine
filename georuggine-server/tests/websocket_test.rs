@@ -103,9 +103,10 @@ async fn test_client_sends_chat_message() {
     let mut ws_client2 = connect_client(&server_url, 99, "pilot_99").await;
     tokio::time::sleep(Duration::from_millis(50)).await;
 
-    // Client 1 invia un messaggio destinato alla centrale (solo testo puro, nessun timestamp né ID)
+    // Client 1 invia un messaggio destinato alla centrale (con contents e timestamp)
     let chat = serde_json::json!({
-        "contents": "Richiesta rifornimento carburante"
+        "contents": "Richiesta rifornimento carburante",
+        "timestamp": "2026-10-17T12:00:00Z"
     });
     ws_client1.send(Message::Text(chat.to_string().into())).await.unwrap();
 
@@ -134,7 +135,7 @@ async fn test_server_sends_broadcast() {
 
     // Il SERVER invia un broadcast
     let broadcast_msg = TextMessage {
-        timestamp: Some("2026-10-03T21:30:00Z".to_string()),
+        timestamp: "2026-10-03T21:30:00Z".to_string(),
         contents: "Avviso emergenza meteo a tutta la flotta!".to_string(),
     };
     clients.send_all(broadcast_msg).await;
@@ -162,7 +163,7 @@ async fn test_server_sends_direct_message_to_user() {
 
     // Server invia a user 55
     let direct_msg = TextMessage {
-        timestamp: Some("2026-10-03T21:05:00Z".to_string()),
+        timestamp: "2026-10-03T21:05:00Z".to_string(),
         contents: "Cambio itinerario assegnato al veicolo 55".to_string(),
     };
     let sent = clients.send_one(55, direct_msg).await;
@@ -238,7 +239,7 @@ async fn test_fleet_lifecycle_flow() {
 
     // 3. La centrale invia broadcast di inizio turno
     let shift_msg = TextMessage {
-        timestamp: Some("2026-10-03T21:46:00Z".to_string()),
+        timestamp: "2026-10-03T21:46:00Z".to_string(),
         contents: "Inizio turno operativo flotta".to_string(),
     };
     clients.send_all(shift_msg).await;
@@ -255,7 +256,7 @@ async fn test_fleet_lifecycle_flow() {
 
     // 4. La centrale assegna una missione privata al solo veicolo 3
     let order_v3 = TextMessage {
-        timestamp: Some("2026-10-03T21:47:00Z".to_string()),
+        timestamp: "2026-10-03T21:47:00Z".to_string(),
         contents: "Raggiungere waypoint Charlie".to_string(),
     };
     let sent = clients.send_one(3, order_v3).await;

@@ -1,11 +1,10 @@
 export interface UserSession {
   username: string;
-  token: string;
 }
 
-export interface AuthResponse {
+export interface AuthResult {
+  success: boolean;
   message: string;
-  token?: string | null;
 }
 
 export interface RegisterFormData {

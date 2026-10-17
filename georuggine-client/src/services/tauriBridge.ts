@@ -1,6 +1,6 @@
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
-import { AuthResponse, UserSession } from "../types/auth";
+import { AuthResult, UserSession } from "../types/auth";
 import { ChatMessage } from "../types/chat";
 
 // Verifica se stiamo eseguendo dentro il runtime Tauri
@@ -15,16 +15,16 @@ export const isInTauri = (): boolean => {
 /**
  * Autenticazione: Registrazione nuovo account
  */
-export async function apiRegister(username: string, password: string): Promise<AuthResponse> {
+export async function apiRegister(username: string, password: string): Promise<AuthResult> {
   if (isInTauri()) {
-    return await invoke<AuthResponse>("register", { username, password });
+    return await invoke<AuthResult>("register", { username, password });
   } else {
     // Modalità mock per sviluppo frontend in browser
     console.log("[Mock Tauri] Invocata registrazione per:", username);
     await new Promise((resolve) => setTimeout(resolve, 600));
     return {
+      success: true,
       message: "Registrazione completata con successo!",
-      token: "mock-jwt-token-register",
     };
   }
 }
@@ -32,16 +32,16 @@ export async function apiRegister(username: string, password: string): Promise<A
 /**
  * Autenticazione: Login
  */
-export async function apiLogin(username: string, password: string): Promise<AuthResponse> {
+export async function apiLogin(username: string, password: string): Promise<AuthResult> {
   if (isInTauri()) {
-    return await invoke<AuthResponse>("login", { username, password });
+    return await invoke<AuthResult>("login", { username, password });
   } else {
     // Modalità mock per sviluppo frontend in browser
     console.log("[Mock Tauri] Invocato login per:", username);
     await new Promise((resolve) => setTimeout(resolve, 600));
     return {
+      success: true,
       message: "Login effettuato con successo",
-      token: "mock-jwt-token-" + Date.now(),
     };
   }
 }
@@ -63,7 +63,8 @@ export async function apiLogout(): Promise<void> {
 export async function apiGetCurrentUser(): Promise<UserSession | null> {
   if (isInTauri()) {
     try {
-      return await invoke<UserSession | null>("get_current_user");
+      const username = await invoke<string | null>("get_current_user");
+      return username ? { username } : null;
     } catch (err) {
       console.warn("Errore get_current_user:", err);
       return null;
@@ -78,15 +79,13 @@ export async function apiGetCurrentUser(): Promise<UserSession | null> {
  */
 export async function apiSendChatMessage(
   contents: string,
-  receiverId: number | null = 0,
 ): Promise<void> {
   if (isInTauri()) {
     await invoke("send_chat_message", {
       contents,
-      receiverId,
     });
   } else {
-    console.log("[Mock Tauri] Invio messaggio:", contents, "a receiver:", receiverId);
+    console.log("[Mock Tauri] Invio messaggio:", contents);
   }
 }
 

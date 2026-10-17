@@ -1,10 +1,9 @@
-pub mod api;
-pub mod controllers;
-pub(crate) mod domain;
-pub(crate) mod repository;
-pub(crate) mod services;
+pub mod auth_service;
+pub mod commands;
+pub mod controller;
+pub mod models;
 
-pub use api::dto::*;
-pub use controllers::auth_controller::*;
-pub use domain::session::*;
-pub use services::auth_service::*;
+pub use auth_service::*;
+pub use commands::*;
+pub use controller::*;
+pub use models::*;

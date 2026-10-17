@@ -1,4 +1,5 @@
 import React from "react";
+import { Container, Row, Col } from "react-bootstrap";
 import { MapPin } from "lucide-react";
 import authBg from "../../assets/auth-bg.jpg";
 
@@ -8,11 +9,14 @@ interface AuthLayoutProps {
 
 export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
   return (
-    <div className="container-fluid p-0 vh-100 d-flex auth-container">
-      <div className="row g-0 h-100 w-100">
-        {/* Colonna Sinistra: Hero visivo con sfondo montano e branding */}
-        <div
-          className="col-md-5 d-none d-md-flex align-items-center justify-content-center position-relative auth-hero-pane"
+    <Container fluid className="p-0 vh-100 d-flex auth-container">
+      <Row className="g-0 h-100 w-100">
+        {/* Colonna Sinistra: Hero visivo adattivo con sfondo montano e branding */}
+        <Col
+          xs={12}
+          md={5}
+          lg={5}
+          className="d-none d-md-flex align-items-center justify-content-center position-relative auth-hero-pane"
           style={{ backgroundImage: `url(${authBg})` }}
         >
           <div className="auth-hero-overlay position-absolute top-0 start-0 w-100 h-100"></div>
@@ -25,15 +29,20 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
             </div>
             <p className="auth-brand-tagline mb-0 font-monospace">Traccia. Comunica. Analizza.</p>
           </div>
-        </div>
+        </Col>
 
-        {/* Colonna Destra: Modulo di input (Login o Registrazione) */}
-        <div className="col-12 col-md-7 d-flex align-items-center justify-content-center p-4 auth-form-pane bg-dark">
-          <div className="auth-form-wrapper w-100" style={{ maxWidth: "420px" }}>
+        {/* Colonna Destra: Modulo di input adattivo (Login o Registrazione) */}
+        <Col
+          xs={12}
+          md={7}
+          lg={7}
+          className="d-flex align-items-center justify-content-center p-4 auth-form-pane bg-dark"
+        >
+          <div className="auth-form-wrapper w-100" style={{ maxWidth: "450px" }}>
             {children}
           </div>
-        </div>
-      </div>
-    </div>
+        </Col>
+      </Row>
+    </Container>
   );
 };

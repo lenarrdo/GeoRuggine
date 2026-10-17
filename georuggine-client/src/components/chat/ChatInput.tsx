@@ -12,8 +12,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const [text, setText] = useState("");
   const [isSending, setIsSending] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSend = async () => {
     const trimmed = text.trim();
     if (!trimmed || isSending || disabled) return;
 
@@ -26,10 +25,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     }
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleSend();
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit(e);
+      e.stopPropagation();
+      handleSend();
     }
   };
 
