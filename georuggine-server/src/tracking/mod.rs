@@ -9,6 +9,12 @@ pub struct Coordinates {
     received_at: DateTime<Local>,
 }
 
+impl PartialEq for Coordinates {
+    fn eq(&self, other: &Self) -> bool {
+        self.lat == other.lat && self.lon == other.lon
+    }
+}
+
 impl Coordinates {
     pub fn new(lat: f64, lon: f64) -> Self {
         Coordinates {
@@ -38,6 +44,14 @@ impl Coordinates {
 
     pub fn received_at(&self) -> DateTime<Local> {
         self.received_at
+    }
+
+    pub fn lat(&self) -> f64 {
+        self.lat
+    }
+
+    pub fn lon(&self) -> f64 {
+        self.lon
     }
 }
 
