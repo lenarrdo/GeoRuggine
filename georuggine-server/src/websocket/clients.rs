@@ -1,3 +1,4 @@
+use chrono::Duration;
 use std::collections::HashMap;
 use tokio::sync::{RwLock, mpsc};
 
@@ -113,6 +114,7 @@ impl ClientsList {
         Some(total_distance / total_hours)
     }
 
+    /// Restituisce tutte le posizioni inviate da un utente a partire dall'apertura del WebSocket.
     pub async fn get_positions(&self, user_id: u32) -> Option<Vec<Coordinates>> {
         let guard = self.list.read().await;
         if let Some(client) = guard.get(&user_id) {
@@ -120,5 +122,38 @@ impl ClientsList {
         }
 
         None
+    }
+
+    /// Restituisce true se l'utente è in movimento, false altrimenti.
+    pub async fn is_moving(&self, user_id: u32) -> bool {
+        let positions_result = self.get_positions(user_id).await;
+        if positions_result.is_none() {
+            return false;
+        }
+
+        let positions = positions_result.unwrap();
+        // first position received, the user is moving.
+        if positions.is_empty() {
+            return true;
+        }
+
+        let last_position: &Coordinates = positions.last().unwrap();
+        let first_same_as_last = positions
+            .iter()
+            .rev()
+            .take_while(|&pos| pos == last_position)
+            .last()
+            .unwrap();
+
+        const INACTIVE_THRESHOLD: Duration = Duration::seconds(3);
+        if last_position
+            .received_at()
+            .signed_duration_since(first_same_as_last.received_at())
+            > INACTIVE_THRESHOLD
+        {
+            return false;
+        }
+
+        true
     }
 }

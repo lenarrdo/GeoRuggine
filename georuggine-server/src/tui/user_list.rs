@@ -194,9 +194,15 @@ impl UserList {
         }
     }
 
+    pub fn set_inactive(&mut self, user_id: u32) {
+        if let Some(user) = self.users.iter_mut().find(|user| user.id == user_id) {
+            user.last_timestamp = Some(Local::now());
+            user.status = UserStatus::Still;
+        }
+    }
+
     pub fn scan_inactive(&mut self) {
-        const INACTIVE_THRESHOLD: Duration = Duration::minutes(3);
-        // const INACTIVE_THRESHOLD: Duration = Duration::seconds(3);
+        const INACTIVE_THRESHOLD: Duration = Duration::seconds(3);
         self.users.iter_mut().for_each(|user| {
             if let Some(timestamp) = user.last_timestamp
                 && Local::now().signed_duration_since(timestamp) > INACTIVE_THRESHOLD

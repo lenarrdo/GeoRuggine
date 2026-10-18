@@ -103,10 +103,13 @@ pub async fn handle_socket(
                 break;
             } else if let Some(pos) = result.continue_value().unwrap() {
                 clients_clone.record_position(user_id, pos).await;
-                tui_tx_clone
-                    .send(AppEvent::NewPosition(user_id))
-                    .await
-                    .unwrap();
+                let event = if let true = clients_clone.is_moving(user_id).await {
+                    AppEvent::UserMoving(user_id)
+                } else {
+                    AppEvent::UserStopped(user_id)
+                };
+
+                tui_tx_clone.send(event).await.unwrap();
             }
         }
 

@@ -28,7 +28,8 @@ const TEXT_FG_COLOR: Color = SLATE.c200;
 pub enum AppEvent {
     ClientConnected(User),
     ClientDisconnected(u32),
-    NewPosition(u32),
+    UserMoving(u32),
+    UserStopped(u32),
     Tick,
 }
 
@@ -53,12 +54,12 @@ impl App {
     pub fn new(tx: Sender<AppEvent>, rx: Receiver<AppEvent>, clients: Arc<ClientsList>) -> Self {
         App {
             exit: false,
-            // user_list: UserList::default(),
-            user_list: UserList::new(vec![
-                User::new(1, "User 1"),
-                User::new(2, "User 2"),
-                User::new(3, "User 3"),
-            ]),
+            user_list: UserList::default(),
+            // user_list: UserList::new(vec![
+            //     User::new(1, "User 1"),
+            //     User::new(2, "User 2"),
+            //     User::new(3, "User 3"),
+            // ]),
             message_popup: MessagePopup::default(),
             user_info_popup: UserInfoPopup::default(),
             tx,
@@ -97,7 +98,8 @@ impl App {
                     match app_event {
                         AppEvent::ClientConnected(user) => self.user_list.add_user(user),
                         AppEvent::ClientDisconnected(user_id) => self.user_list.remove_user(user_id),
-                        AppEvent::NewPosition(user_id) => self.user_list.set_active(user_id),
+                        AppEvent::UserMoving(user_id) => self.user_list.set_active(user_id),
+                        AppEvent::UserStopped(user_id) => self.user_list.set_inactive(user_id),
                         AppEvent::Tick => self.user_list.scan_inactive(),
                     }
                 }
