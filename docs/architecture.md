@@ -233,3 +233,38 @@ sequenceDiagram
 1. **Non bypassare il Dominio con i DTO:** I repository e i servizi non devono accettare DTO di rete per operazioni interne; i DTO vanno convertiti in entità di dominio (`Position`, `User`, `Message`) all'ingresso.
 2. **Nessuna dipendenza circolare:** Un modulo può dipendere dall'interfaccia `/api` di un altro modulo, ma mai dai suoi file interni `/domain`, `/services` o `/repository`.
 3. **Persistenza sicura:** Qualsiasi messaggio o stato di telemetria inviato in broadcast o in real-time deve essere storicizzato nel repository appropriato prima o contestualmente alla trasmissione di rete.
+
+
+---
+
+## 6. Architettura del Client Tauri (Georuggine Client)
+
+Anche il backend desktop di **`georuggine-client`** (`src-tauri/src/`) adotta la medesima struttura modulare a 5 livelli del server, allineandosi ai principi di **Clean Architecture** e **Domain-Driven Design (DDD)**.
+
+```text
+src-tauri/src/
+├── auth/          # Dominio: Sessione utente, REST Login & Register
+├── messages/      # Dominio: Creazione e invio messaggi di chat (Produttore 1)
+├── tracking/      # Dominio: Lettura coordinate da file e tracking periodico (Produttore 2)
+├── websocket/     # Dominio/Rete: Gestione canale full-duplex WS (Task 1 Trasmissione, Task 2 Ricezione)
+├── state.rs       # Stato globale condiviso (AppState, sincronizzazione MPSC e AbortHandle)
+├── lib.rs         # Configurazione runtime Tauri, lifecycle eventi finestra e invoke_handler
+└── main.rs        # Entry point dell'eseguibile desktop
+```
+
+### 6.1 Anatomia delle Sottocartelle del Client
+
+Ogni dominio applicativo (`auth`, `messages`, `tracking`, `websocket`) rispetta i 5 livelli standard:
+
+1. **`api/` (Contratto Pubblico & DTO):** Strutture dati scambiate con il frontend React o inviate sulla rete (`AuthRequest`, `AuthResponse`, `PositionUpdate`, `ChatMessage`, `ClientIncomingMessage`).
+2. **`domain/` (Entità & Tipi Puri):** Modelli interni dell'applicazione (`UserSession`, `CoordinatePoint`, `Message`, costanti di configurazione rete).
+3. **`services/` (Casi d'Uso & Logica Applicativa):**
+   - `AuthService`: chiamate HTTP REST verso le API di autenticazione del server (`/auth/register`, `/auth/login`).
+   - `MessageService`: costruzione e accodamento thread-safe dei messaggi di chat sul canale MPSC.
+   - `TrackingService`: orchestrazione del Task 3 di tracciamento asincrono periodico a 30s da file di coordinate.
+   - `WsService`: gestione della connessione WebSocket, Task 1 (trasmissione da canale MPSC a socket) e Task 2 (ricezione da socket ad eventi Tauri).
+4. **`repository/` (Persistenza e Data Access):**
+   - `SessionRepository`: gestione thread-safe della sessione utente in memoria nello stato condiviso.
+   - `CoordinateRepository`: ricerca dinamica, parsing e fallback delle coordinate da file locali (`coordinates.json`, `positions.json`, `coordinates.csv`).
+5. **`controllers/` (Entry Point IPC Tauri):**
+   - Comandi esposti all'interfaccia grafica tramite `#[tauri::command]` (`register`, `login`, `logout`, `get_current_user`, `send_chat_message`).

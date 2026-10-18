@@ -11,31 +11,27 @@ pub enum ClientIncomingMessage {
     Text(TextMessage),
 }
 
-/// Modello per i messaggi di testo (scambiati tra client e server, o inviati dal server in broadcast)
+/// Modello per i messaggi di testo (client e server inviano e ricevono entrambi contents e timestamp generato in quel momento)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TextMessage {
-    pub sender_id: u32,
-    pub receiver_id: u32,
     pub contents: String,
     pub timestamp: String,
 }
 
 impl TextMessage {
-    pub fn new(sender_id: u32, receiver_id: u32, contents: String) -> Self {
+    pub fn new(contents: String) -> Self {
         TextMessage {
-            sender_id,
-            receiver_id,
             contents,
             timestamp: Local::now().format("%Y-%m-%dT%H:%M:%S").to_string(),
         }
     }
 }
 
-/// Coordinate geografiche/emulate inviate dal client al server
+/// Coordinate geografiche inviate dal client al server (il timestamp viene calcolato dal client)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PositionUpdate {
-    pub sender_id: u32,
     pub x_coord: f64,
     pub y_coord: f64,
-    pub timestamp: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub timestamp: Option<String>,
 }

@@ -22,13 +22,13 @@ pub async fn init(reset_tables: bool) -> Result<Pool<Sqlite>, Box<dyn std::error
     let mut tx = pool.begin().await?;
 
     if reset_tables {
-        sqlx::query("DROP TABLE IF EXISTS users")
+        sqlx::query("DROP TABLE IF EXISTS messages")
             .execute(&mut *tx)
             .await?;
         sqlx::query("DROP TABLE IF EXISTS positions")
             .execute(&mut *tx)
             .await?;
-        sqlx::query("DROP TABLE IF EXISTS messages")
+        sqlx::query("DROP TABLE IF EXISTS users")
             .execute(&mut *tx)
             .await?;
     }
@@ -60,7 +60,7 @@ pub async fn init(reset_tables: bool) -> Result<Pool<Sqlite>, Box<dyn std::error
         "CREATE TABLE IF NOT EXISTS messages (
             message_id INTEGER PRIMARY KEY,
             sender_id INTEGER NOT NULL,
-            receiver_id INTEGER NOT NULL,
+            receiver_id INTEGER,
             timestamp DATETIME NOT NULL,
             contents TEXT,
             FOREIGN KEY(sender_id) REFERENCES users(id),

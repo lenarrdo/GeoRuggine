@@ -67,7 +67,7 @@ impl ClientsList {
             return false;
         };
 
-        let text_message = TextMessage::new(0, target_user_id, msg.to_string());
+        let text_message = TextMessage::new(msg.to_string());
         if let Err(e) = client.tx.send(text_message) {
             eprintln!("Errore invio a user_id {target_user_id}: {e}");
             return false;
