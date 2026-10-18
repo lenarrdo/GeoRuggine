@@ -74,8 +74,8 @@ impl From<&User> for ListItem<'_> {
 
 #[derive(Default)]
 pub struct UserList {
-    pub users: Vec<User>,
-    pub state: ListState,
+    users: Vec<User>,
+    state: ListState,
 }
 
 impl UserList {
@@ -142,6 +142,17 @@ impl UserList {
 
     pub fn select_last(&mut self) {
         self.state.select_last()
+    }
+
+    pub fn select_all_toggle(&mut self) {
+        let all_selected =
+            self.users.iter().filter(|user| user.selected).count() == self.users.len();
+
+        if all_selected {
+            self.clear_selected_users();
+        } else {
+            self.users.iter_mut().for_each(|user| user.selected = true);
+        }
     }
 
     pub fn toggle_selected(&mut self) {

@@ -53,7 +53,12 @@ impl App {
     pub fn new(tx: Sender<AppEvent>, rx: Receiver<AppEvent>, clients: Arc<ClientsList>) -> Self {
         App {
             exit: false,
-            user_list: UserList::default(),
+            // user_list: UserList::default(),
+            user_list: UserList::new(vec![
+                User::new(1, "User 1"),
+                User::new(2, "User 2"),
+                User::new(3, "User 3"),
+            ]),
             message_popup: MessagePopup::default(),
             user_info_popup: UserInfoPopup::default(),
             tx,
@@ -124,6 +129,7 @@ impl App {
             KeyCode::Char('g') | KeyCode::Home => self.user_list.select_first(),
             KeyCode::Char('G') | KeyCode::End => self.user_list.select_last(),
             KeyCode::Char(' ') => self.user_list.toggle_selected(),
+            KeyCode::Char('a') => self.user_list.select_all_toggle(),
             KeyCode::Char('i') => {
                 if let Some(user) = self.user_list.get_hovered_user() {
                     self.user_info_popup.avg_speed = self

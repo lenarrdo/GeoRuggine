@@ -57,18 +57,6 @@ impl ClientsList {
         self.list.read().await.contains_key(&user_id)
     }
 
-    /// Invia un messaggio in BROADCAST a tutte le sessioni WebSocket attive.
-    pub async fn send_all(&self, msg: &str) {
-        let guard = self.list.read().await;
-
-        for (user_id, client) in guard.iter() {
-            let text_message = TextMessage::new(0, *user_id, msg.to_string());
-            if let Err(e) = client.tx.send(text_message) {
-                eprintln!("Errore inserimento messaggio in coda broadcast per {user_id}: {e}");
-            }
-        }
-    }
-
     /// Invia un messaggio a un SINGOLO CLIENT, specificando l'user_id.
     pub async fn send_one(&self, target_user_id: u32, msg: &str) -> bool {
         let guard = self.list.read().await;
