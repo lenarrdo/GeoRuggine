@@ -12,7 +12,7 @@ use axum::{
 use std::{net::SocketAddr, sync::Arc};
 use tokio::sync::mpsc;
 
-use crate::auth::{handle_login, handle_registration};
+use crate::auth::{handle_login, handle_registration, user_repository::UserRepository};
 use crate::shared::{app_state::AppState, database as db};
 use crate::tui::App;
 use crate::websocket::{clients::ClientsList, ws_handler};
@@ -26,8 +26,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // channel to send messages to the UI
     let (tx, rx) = mpsc::channel(100);
 
+    let db_pool = db::init(false).await?;
     let list = Arc::new(ClientsList::new());
-    let db_pool = db::init(true).await?;
+    let users = UserRepository::get_users(&db_pool).await?;
+
     let router = Router::new()
         .route(
             &format!("{BASE_URL}/auth/register"),
@@ -53,7 +55,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let terminal = ratatui::init();
-    let app_result = App::new(tx, rx, list).run(terminal).await;
+    let app_result = App::new(tx, rx, users, list).run(terminal).await;
     ratatui::restore();
 
     app_result

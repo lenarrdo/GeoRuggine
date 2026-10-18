@@ -15,10 +15,11 @@ use ratatui::{
 use tokio::sync::mpsc::{Receiver, Sender};
 
 use crate::{
+    auth::user_repository::UserEntity,
     tui::{
         message_popup::MessagePopup,
         user_info_popup::UserInfoPopup,
-        user_list::{User, UserList},
+        user_list::{User, UserList, UserStatus},
     },
     websocket::clients::ClientsList,
 };
@@ -26,7 +27,7 @@ use crate::{
 const TEXT_FG_COLOR: Color = SLATE.c200;
 
 pub enum AppEvent {
-    ClientConnected(User),
+    ClientConnected(u32),
     ClientDisconnected(u32),
     UserMoving(u32),
     UserStopped(u32),
@@ -51,10 +52,21 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(tx: Sender<AppEvent>, rx: Receiver<AppEvent>, clients: Arc<ClientsList>) -> Self {
+    pub fn new(
+        tx: Sender<AppEvent>,
+        rx: Receiver<AppEvent>,
+        user_entities: Vec<UserEntity>,
+        clients: Arc<ClientsList>,
+    ) -> Self {
+        let users = user_entities
+            .iter()
+            .map(|user_entity| User::new(user_entity.id, &user_entity.username))
+            .collect();
+
         App {
             exit: false,
-            user_list: UserList::default(),
+            user_list: UserList::new(users),
+            // user_list: UserList::default(),
             // user_list: UserList::new(vec![
             //     User::new(1, "User 1"),
             //     User::new(2, "User 2"),
@@ -96,10 +108,10 @@ impl App {
                 }
                 Some(app_event) = self.rx.recv() => {
                     match app_event {
-                        AppEvent::ClientConnected(user) => self.user_list.add_user(user),
-                        AppEvent::ClientDisconnected(user_id) => self.user_list.remove_user(user_id),
-                        AppEvent::UserMoving(user_id) => self.user_list.set_active(user_id),
-                        AppEvent::UserStopped(user_id) => self.user_list.set_inactive(user_id),
+                        AppEvent::ClientConnected(user_id) => self.user_list.set_status(user_id, UserStatus::Still),
+                        AppEvent::ClientDisconnected(user_id) => self.user_list.set_status(user_id, UserStatus::Disconnected),
+                        AppEvent::UserMoving(user_id) => self.user_list.set_status(user_id, UserStatus::Moving),
+                        AppEvent::UserStopped(user_id) => self.user_list.set_status(user_id, UserStatus::Still),
                         AppEvent::Tick => self.user_list.scan_inactive(),
                     }
                 }

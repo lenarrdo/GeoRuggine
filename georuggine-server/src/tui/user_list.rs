@@ -9,10 +9,11 @@ use ratatui::{
     widgets::{Block, List, ListItem, ListState},
 };
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum UserStatus {
     Moving,
     Still,
+    Disconnected,
 }
 
 impl Default for UserStatus {
@@ -24,6 +25,7 @@ impl Default for UserStatus {
 impl Display for UserStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let str = match self {
+            UserStatus::Disconnected => "Disconnected",
             UserStatus::Still => "Still",
             UserStatus::Moving => "Moving",
         };
@@ -35,6 +37,7 @@ impl Display for UserStatus {
 impl UserStatus {
     pub fn to_color(&self) -> Color {
         match self {
+            UserStatus::Disconnected => Color::DarkGray,
             UserStatus::Still => Color::Gray,
             UserStatus::Moving => Color::LightGreen,
         }
@@ -56,7 +59,7 @@ impl User {
             id,
             username: username.to_owned(),
             selected: false,
-            status: UserStatus::Still,
+            status: UserStatus::Disconnected,
             last_timestamp: None,
         }
     }
@@ -176,40 +179,30 @@ impl UserList {
         previously_selected
     }
 
-    pub fn add_user(&mut self, user: User) {
-        self.users.push(user);
-        if self.users.len() == 1 {
-            self.state.select(Some(0));
-        }
-    }
+    pub fn set_status(&mut self, user_id: u32, new_status: UserStatus) {
+        let Some(user) = self.users.iter_mut().find(|user| user.id == user_id) else {
+            return;
+        };
 
-    pub fn remove_user(&mut self, user_id: u32) {
-        self.users.retain(|u| u.id != user_id);
-    }
-
-    pub fn set_active(&mut self, user_id: u32) {
-        if let Some(user) = self.users.iter_mut().find(|user| user.id == user_id) {
+        if new_status != UserStatus::Disconnected {
             user.last_timestamp = Some(Local::now());
-            user.status = UserStatus::Moving;
         }
-    }
-
-    pub fn set_inactive(&mut self, user_id: u32) {
-        if let Some(user) = self.users.iter_mut().find(|user| user.id == user_id) {
-            user.last_timestamp = Some(Local::now());
-            user.status = UserStatus::Still;
-        }
+        user.status = new_status;
     }
 
     pub fn scan_inactive(&mut self) {
         const INACTIVE_THRESHOLD: Duration = Duration::seconds(3);
-        self.users.iter_mut().for_each(|user| {
+        for user in &mut self.users {
+            if user.status == UserStatus::Disconnected {
+                continue;
+            }
+
             if let Some(timestamp) = user.last_timestamp
                 && Local::now().signed_duration_since(timestamp) > INACTIVE_THRESHOLD
             {
                 user.status = UserStatus::Still;
             }
-        });
+        }
     }
 
     pub fn get_hovered_user(&mut self) -> Option<User> {

@@ -16,9 +16,9 @@ use std::sync::Arc;
 use std::{net::SocketAddr, ops::ControlFlow};
 use tokio::sync::mpsc::{self, Sender};
 
+use crate::auth::services::token_service;
 use crate::tui::AppEvent;
 use crate::websocket::clients::{ClientsList, ConnectedClient};
-use crate::{auth::services::token_service, tui::user_list::User};
 use crate::{
     messages::{ClientIncomingMessage, TextMessage},
     tracking::Coordinates,
@@ -61,15 +61,13 @@ pub async fn ws_handler(
         ));
     }
 
-    let uname = claims.username.clone();
-    Ok(ws.on_upgrade(move |socket| handle_socket(socket, claims.user_id, uname, clients, tx)))
+    Ok(ws.on_upgrade(move |socket| handle_socket(socket, claims.user_id, clients, tx)))
 }
 
 /// Gestisce l'intero ciclo di vita di una singola connessione WebSocket attiva.
 pub async fn handle_socket(
     socket: WebSocket,
     user_id: u32,
-    username: String,
     clients: Arc<ClientsList>,
     tui_tx: Sender<AppEvent>,
 ) {
@@ -78,7 +76,7 @@ pub async fn handle_socket(
 
     clients.add(user_id, ConnectedClient::new(tx)).await;
     tui_tx
-        .send(AppEvent::ClientConnected(User::new(user_id, &username)))
+        .send(AppEvent::ClientConnected(user_id))
         .await
         .unwrap();
 

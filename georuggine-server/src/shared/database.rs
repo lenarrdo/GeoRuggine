@@ -44,7 +44,7 @@ pub async fn init(reset_tables: bool) -> Result<Pool<Sqlite>, Box<dyn std::error
     .await?;
 
     sqlx::query(
-        "CREATE TABLE positions (
+        "CREATE TABLE IF NOT EXISTS positions (
             id INTEGER PRIMARY KEY,
             user_id INTEGER NOT NULL,
             x_coord INTEGER NOT NULL,
@@ -57,7 +57,7 @@ pub async fn init(reset_tables: bool) -> Result<Pool<Sqlite>, Box<dyn std::error
     .await?;
 
     sqlx::query(
-        "CREATE TABLE messages (
+        "CREATE TABLE IF NOT EXISTS messages (
             message_id INTEGER PRIMARY KEY,
             sender_id INTEGER NOT NULL,
             receiver_id INTEGER NOT NULL,
