@@ -1,5 +1,5 @@
 export interface PositionUpdate {
-  x_coord: number;
-  y_coord: number;
+  lat: number;
+  lon: number;
   timestamp: string;
 }

@@ -37,11 +37,11 @@ impl MessageRepository {
         timestamp: &str,
     ) -> Result<(), sqlx::Error> {
         sqlx::query(
-            "INSERT INTO positions (user_id, x_coord, y_coord, timestamp) VALUES (?, ?, ?, ?);",
+            "INSERT INTO positions (user_id, lat, lon, timestamp) VALUES (?, ?, ?, ?);",
         )
         .bind(user_id)
-        .bind(position.x_coord)
-        .bind(position.y_coord)
+        .bind(position.lat)
+        .bind(position.lon)
         .bind(timestamp)
         .execute(&self.db_pool)
         .await?;

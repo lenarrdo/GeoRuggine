@@ -88,8 +88,8 @@ pub async fn start_background_tracking(
             index += 1;
 
             let pos = PositionUpdate {
-                x_coord: x,
-                y_coord: y,
+                lat: x,
+                lon: y,
                 timestamp: Some(chrono::Utc::now().to_rfc3339()),
             };
 

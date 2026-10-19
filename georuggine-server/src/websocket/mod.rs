@@ -144,7 +144,7 @@ pub async fn process_message(
         Message::Text(t) => {
             match serde_json::from_str::<ClientIncomingMessage>(&t) {
                 Ok(ClientIncomingMessage::Position(pos)) => {
-                    new_position = Some(Coordinates::new(pos.x_coord, pos.y_coord));
+                    new_position = Some(Coordinates::new(pos.lat, pos.lon));
 
                     // Il timestamp della posizione viene calcolato dal client
                     let timestamp = pos
@@ -153,7 +153,7 @@ pub async fn process_message(
                         .unwrap_or_else(|| chrono::Local::now().to_rfc3339());
                     // println!(
                     //     ">>> [COORDINATE DA CLIENT] Da user_id {user_id}: x={}, y={}, time={timestamp}",
-                    //     pos.x_coord, pos.y_coord
+                    //     pos.lat, pos.lon
                     // );
 
                     if let Err(_e) = message_repo.save_position(user_id, &pos, &timestamp).await {

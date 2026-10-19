@@ -30,8 +30,8 @@ impl TextMessage {
 /// Coordinate geografiche inviate dal client al server (il timestamp viene calcolato dal client)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PositionUpdate {
-    pub x_coord: f64,
-    pub y_coord: f64,
+    pub lat: f64,
+    pub lon: f64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub timestamp: Option<String>,
 }
