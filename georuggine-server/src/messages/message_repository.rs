@@ -1,6 +1,6 @@
 use sqlx::SqlitePool;
 
-use crate::messages::{PositionUpdate, TextMessage};
+use crate::messages::{Coordinates, TextMessage};
 
 #[derive(Clone)]
 pub struct MessageRepository {
@@ -33,18 +33,15 @@ impl MessageRepository {
     pub async fn save_position(
         &self,
         user_id: u32,
-        position: &PositionUpdate,
-        timestamp: &str,
+        position: &Coordinates,
     ) -> Result<(), sqlx::Error> {
-        sqlx::query(
-            "INSERT INTO positions (user_id, lat, lon, timestamp) VALUES (?, ?, ?, ?);",
-        )
-        .bind(user_id)
-        .bind(position.lat)
-        .bind(position.lon)
-        .bind(timestamp)
-        .execute(&self.db_pool)
-        .await?;
+        sqlx::query("INSERT INTO positions (user_id, lat, lon, timestamp) VALUES (?, ?, ?, ?);")
+            .bind(user_id)
+            .bind(position.lat)
+            .bind(position.lon)
+            .bind(position.received_at().to_rfc3339())
+            .execute(&self.db_pool)
+            .await?;
 
         Ok(())
     }

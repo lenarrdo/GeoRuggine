@@ -2,7 +2,7 @@ use chrono::Duration;
 use std::collections::HashMap;
 use tokio::sync::{RwLock, mpsc};
 
-use crate::{messages::TextMessage, tracking::Coordinates};
+use crate::messages::{Coordinates, TextMessage};
 
 /// Rappresenta un client WebSocket attualmente connesso al server.
 #[derive(Clone)]

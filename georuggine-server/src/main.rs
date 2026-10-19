@@ -1,7 +1,6 @@
 pub mod auth;
 pub mod messages;
 pub mod shared;
-pub mod tracking;
 pub mod tui;
 pub mod websocket;
 
@@ -60,4 +59,3 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     app_result
 }
-

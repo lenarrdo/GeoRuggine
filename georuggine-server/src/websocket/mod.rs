@@ -17,9 +17,9 @@ use tokio::sync::mpsc::{self};
 
 use crate::AppState;
 use crate::auth::services::token_service;
-use crate::messages::message_repository::MessageRepository;
-use crate::messages::{ClientIncomingMessage, TextMessage};
-use crate::tracking::Coordinates;
+use crate::messages::{
+    ClientIncomingMessage, Coordinates, TextMessage, message_repository::MessageRepository,
+};
 use crate::tui::AppEvent;
 use crate::websocket::clients::ConnectedClient;
 
@@ -144,21 +144,16 @@ pub async fn process_message(
         Message::Text(t) => {
             match serde_json::from_str::<ClientIncomingMessage>(&t) {
                 Ok(ClientIncomingMessage::Position(pos)) => {
-                    new_position = Some(Coordinates::new(pos.lat, pos.lon));
+                    if let Err(_e) = message_repo.save_position(user_id, &pos).await {
+                        // eprintln!("Errore salvataggio posizione nel DB per user_id {user_id}: {e}");
+                    }
 
-                    // Il timestamp della posizione viene calcolato dal client
-                    let timestamp = pos
-                        .timestamp
-                        .clone()
-                        .unwrap_or_else(|| chrono::Local::now().to_rfc3339());
                     // println!(
                     //     ">>> [COORDINATE DA CLIENT] Da user_id {user_id}: x={}, y={}, time={timestamp}",
                     //     pos.lat, pos.lon
                     // );
 
-                    if let Err(_e) = message_repo.save_position(user_id, &pos, &timestamp).await {
-                        // eprintln!("Errore salvataggio posizione nel DB per user_id {user_id}: {e}");
-                    }
+                    new_position = Some(pos);
                 }
                 Ok(ClientIncomingMessage::Text(chat_msg)) => {
                     // println!(
