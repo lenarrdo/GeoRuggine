@@ -36,7 +36,15 @@
           # Tauri
           pkg-config
           wrapGAppsHook4
+          gtk3
+          libsoup_3
+          webkitgtk_4_1
         ];
+
+        shellHook = ''
+          export XDG_DATA_DIRS="$GSETTINGS_SCHEMAS_PATH"
+          export WEBKIT_DISABLE_DMABUF_RENDERER=1
+        '';
       };
     };
 }
