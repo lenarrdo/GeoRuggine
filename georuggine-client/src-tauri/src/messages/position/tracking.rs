@@ -26,7 +26,7 @@ pub fn find_coordinates_file() -> Option<PathBuf> {
     None
 }
 
-pub fn load_coordinates() -> Vec<(i64, i64)> {
+pub fn load_coordinates() -> Vec<(f64, f64)> {
     if let Some(path) = find_coordinates_file() {
         if let Ok(file) = File::open(&path) {
             let reader = BufReader::new(file);
@@ -43,7 +43,7 @@ pub fn load_coordinates() -> Vec<(i64, i64)> {
                 for line in reader.lines().flatten() {
                     let parts: Vec<&str> = line.split(',').map(|s| s.trim()).collect();
                     if parts.len() >= 2 {
-                        if let (Ok(x), Ok(y)) = (parts[0].parse::<i64>(), parts[1].parse::<i64>()) {
+                        if let (Ok(x), Ok(y)) = (parts[0].parse::<f64>(), parts[1].parse::<f64>()) {
                             points.push((x, y));
                         }
                     }
@@ -58,17 +58,15 @@ pub fn load_coordinates() -> Vec<(i64, i64)> {
 
     println!("[Tracking] File non trovato o non leggibile, impiego percorso predefinito");
     vec![
-        (45010, 7680),
-        (45015, 7685),
-        (45020, 7690),
-        (45025, 7695),
-        (45030, 7700),
+        (45.01, 7.68),
+        (45.01, 7.68),
+        (45.02, 7.69),
+        (45.02, 7.69),
+        (45.03, 7.70),
     ]
 }
 
-pub async fn start_background_tracking(
-    state: &AppState,
-) -> Result<(), String> {
+pub async fn start_background_tracking(state: &AppState) -> Result<(), String> {
     let coordinates = load_coordinates();
     let state_clone = state.clone();
 
@@ -83,7 +81,7 @@ pub async fn start_background_tracking(
             let (x, y) = if index < coordinates.len() {
                 coordinates[index]
             } else {
-                *coordinates.last().unwrap_or(&(45000, 7600))
+                *coordinates.last().unwrap_or(&(45.00, 76.00))
             };
             index += 1;
 
@@ -94,7 +92,9 @@ pub async fn start_background_tracking(
             };
 
             // Invia la posizione sul canale condiviso MPSC verso il Task 1
-            if let Err(e) = state_clone.send_ws_message(ClientIncomingMessage::Position(pos.clone())) {
+            if let Err(e) =
+                state_clone.send_ws_message(ClientIncomingMessage::Position(pos.clone()))
+            {
                 eprintln!("[Tracking] Errore invio posizione sul canale MPSC: {e}");
                 break;
             }
