@@ -36,9 +36,9 @@ pub struct WsResponse {
 
 /// Handler HTTP iniziale per la rotta WebSocket (es. `GET {BASE_URL}/ws`).
 pub async fn ws_handler(
-    ws: WebSocketUpgrade,
     Query(params): Query<WsParams>,
-    State(state): State<AppState>,
+    State(state): State<Arc<AppState>>,
+    ws: WebSocketUpgrade,
 ) -> Result<impl IntoResponse, (StatusCode, Json<WsResponse>)> {
     let claims = token_service::validate_jwt(&params.token).map_err(|_| {
         (
@@ -62,7 +62,7 @@ pub async fn ws_handler(
 }
 
 /// Gestisce l'intero ciclo di vita di una singola connessione WebSocket attiva.
-pub async fn handle_socket(socket: WebSocket, user_id: u32, state: AppState) {
+pub async fn handle_socket(socket: WebSocket, user_id: u32, state: Arc<AppState>) {
     let (mut ws_sender, mut ws_receiver) = socket.split();
     let (tx, mut rx) = mpsc::unbounded_channel::<TextMessage>();
 
@@ -82,7 +82,7 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, state: AppState) {
         }
     });
 
-    let clients_clone = Arc::clone(&state.clients);
+    let state_clone = Arc::clone(&state);
     let tui_tx_clone = state.tx.clone();
     let message_repo = MessageRepository::new(state.db.clone());
 
@@ -95,8 +95,8 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, state: AppState) {
             if result.is_break() {
                 break;
             } else if let Some(pos) = result.continue_value().unwrap() {
-                clients_clone.record_position(user_id, pos).await;
-                let event = if let true = clients_clone.is_moving(user_id).await {
+                state_clone.clients.record_position(user_id, pos).await;
+                let event = if let true = state_clone.clients.is_moving(user_id).await {
                     AppEvent::UserMoving(user_id)
                 } else {
                     AppEvent::UserStopped(user_id)

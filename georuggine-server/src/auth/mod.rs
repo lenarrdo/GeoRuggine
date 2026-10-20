@@ -1,11 +1,15 @@
 pub mod services;
 pub mod user_repository;
 
+use std::sync::Arc;
+
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use serde::{Deserialize, Serialize};
-use sqlx::SqlitePool;
 
-use crate::auth::services::auth_service::{AuthService, LoginError, RegisterError};
+use crate::{
+    auth::services::auth_service::{AuthService, LoginError, RegisterError},
+    shared::app_state::AppState,
+};
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct AuthRequest {
@@ -20,13 +24,13 @@ pub struct AuthResponse {
 }
 
 pub async fn handle_registration(
-    State(db_pool): State<SqlitePool>,
+    State(state): State<Arc<AppState>>,
     Json(body): Json<AuthRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<AuthResponse>)> {
     let username = body.username.as_deref().unwrap_or("");
     let password = body.password.as_deref().unwrap_or("");
 
-    match AuthService::register(&db_pool, username, password).await {
+    match AuthService::register(&state.db, username, password).await {
         Ok(_) => Ok((
             StatusCode::CREATED,
             Json(AuthResponse {
@@ -66,13 +70,13 @@ pub async fn handle_registration(
 }
 
 pub async fn handle_login(
-    State(db_pool): State<SqlitePool>,
+    State(state): State<Arc<AppState>>,
     Json(body): Json<AuthRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<AuthResponse>)> {
     let username = body.username.as_deref().unwrap_or("");
     let password = body.password.as_deref().unwrap_or("");
 
-    match AuthService::login(&db_pool, username, password).await {
+    match AuthService::login(&state.db, username, password).await {
         Ok(token) => Ok((
             StatusCode::OK,
             Json(AuthResponse {

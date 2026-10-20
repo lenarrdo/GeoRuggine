@@ -12,16 +12,16 @@ use ratatui::{
     style::{Color, Style, palette::tailwind::SLATE},
     widgets::{Block, BorderType, Paragraph},
 };
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::mpsc::Receiver;
 
 use crate::{
     auth::user_repository::UserEntity,
+    shared::app_state::AppState,
     tui::{
         message_popup::MessagePopup,
         user_info_popup::UserInfoPopup,
         user_list::{User, UserList, UserStatus},
     },
-    websocket::clients::ClientsList,
 };
 
 const TEXT_FG_COLOR: Color = SLATE.c200;
@@ -43,20 +43,16 @@ pub struct App {
     message_popup: MessagePopup,
     user_info_popup: UserInfoPopup,
 
-    // communication
-    tx: Sender<AppEvent>,
-    rx: Receiver<AppEvent>,
-
     // domain info
-    clients: Arc<ClientsList>,
+    rx: Receiver<AppEvent>,
+    state: Arc<AppState>,
 }
 
 impl App {
     pub fn new(
-        tx: Sender<AppEvent>,
         rx: Receiver<AppEvent>,
         _user_entities: Vec<UserEntity>,
-        clients: Arc<ClientsList>,
+        state: Arc<AppState>,
     ) -> Self {
         // let users = user_entities
         //     .iter()
@@ -74,9 +70,8 @@ impl App {
             ]),
             message_popup: MessagePopup::default(),
             user_info_popup: UserInfoPopup::default(),
-            tx,
             rx,
-            clients,
+            state,
         }
     }
 
@@ -86,7 +81,7 @@ impl App {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut reader = EventStream::new();
 
-        let tx = self.tx.clone();
+        let tx = self.state.tx.clone();
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(1));
             loop {
@@ -128,7 +123,7 @@ impl App {
                 let msg = msg.unwrap();
                 let previously_selected = self.user_list.clear_selected_users();
                 for user_id in previously_selected {
-                    self.clients.send_one(user_id, &msg).await;
+                    self.state.clients.send_one(user_id, &msg).await;
                 }
             }
             return;
@@ -147,6 +142,7 @@ impl App {
             KeyCode::Char('i') => {
                 if let Some(user) = self.user_list.get_hovered_user() {
                     self.user_info_popup.avg_speed = self
+                        .state
                         .clients
                         .get_avg_speed(user.id)
                         .await

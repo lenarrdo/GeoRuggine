@@ -19,10 +19,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // channel to send messages to the UI
     let (tx, rx) = mpsc::channel(100);
 
-    let db_pool = db::init(false).await?;
-    let list = Arc::new(ClientsList::new());
-    let users = UserRepository::get_users(&db_pool).await?;
-
+    let app_state = Arc::new(AppState::new(
+        db::init(false).await?,
+        ClientsList::new(),
+        tx.clone(),
+    ));
     let router = Router::new()
         .route(
             &format!("{BASE_URL}/auth/register"),
@@ -30,7 +31,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .route(&format!("{BASE_URL}/auth/login"), post(handle_login))
         .route(&format!("{BASE_URL}/ws"), get(ws_handler))
-        .with_state(AppState::new(db_pool, Arc::clone(&list), tx.clone()));
+        .with_state(Arc::clone(&app_state));
 
     let listener = tokio::net::TcpListener::bind(format!("{HOST}:{PORT}"))
         .await
@@ -47,8 +48,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap();
     });
 
+    let users = UserRepository::get_users(&app_state.db).await?;
     let terminal = ratatui::init();
-    let app_result = App::new(tx, rx, users, list).run(terminal).await;
+    let app_result = App::new(rx, users, Arc::clone(&app_state))
+        .run(terminal)
+        .await;
     ratatui::restore();
 
     app_result
