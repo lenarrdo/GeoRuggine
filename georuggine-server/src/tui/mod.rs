@@ -55,23 +55,23 @@ impl App {
     pub fn new(
         tx: Sender<AppEvent>,
         rx: Receiver<AppEvent>,
-        user_entities: Vec<UserEntity>,
+        _user_entities: Vec<UserEntity>,
         clients: Arc<ClientsList>,
     ) -> Self {
-        let users = user_entities
-            .iter()
-            .map(|user_entity| User::new(user_entity.id, &user_entity.username))
-            .collect();
+        // let users = user_entities
+        //     .iter()
+        //     .map(|user_entity| User::new(user_entity.id, &user_entity.username))
+        //     .collect();
 
         App {
             exit: false,
-            user_list: UserList::new(users),
+            // user_list: UserList::new(users),
             // user_list: UserList::default(),
-            // user_list: UserList::new(vec![
-            //     User::new(1, "User 1"),
-            //     User::new(2, "User 2"),
-            //     User::new(3, "User 3"),
-            // ]),
+            user_list: UserList::new(vec![
+                User::new(1, "User 1"),
+                User::new(2, "User 2"),
+                User::new(3, "User 3"),
+            ]),
             message_popup: MessagePopup::default(),
             user_info_popup: UserInfoPopup::default(),
             tx,
@@ -188,8 +188,7 @@ impl App {
             footer,
         );
 
-        self.user_info_popup
-            .render(rounded_block("User Info"), frame);
+        self.user_info_popup.render(frame);
 
         self.message_popup
             .render(rounded_block("New Message"), frame);
