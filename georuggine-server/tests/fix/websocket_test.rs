@@ -1,8 +1,9 @@
+// FIXME
+
 use futures_util::{SinkExt, StreamExt};
 use georuggine_server::{
     auth::services::token_service,
-    create_app,
-    database as db,
+    create_app, database as db,
     messages::{PositionUpdate, TextMessage},
     websocket::clients::ClientsList,
 };
@@ -11,9 +12,9 @@ use std::time::Duration;
 use tokio::net::TcpListener;
 use tokio::time::timeout;
 use tokio_tungstenite::connect_async;
-use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
-use tokio_tungstenite::tungstenite::protocol::CloseFrame;
 use tokio_tungstenite::tungstenite::Message;
+use tokio_tungstenite::tungstenite::protocol::CloseFrame;
+use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
 
 /// Helper: crea un token JWT valido per i test
 fn create_test_token(user_id: i64, username: &str) -> String {
@@ -42,11 +43,19 @@ async fn spawn_test_server() -> (String, ClientsList) {
 }
 
 /// Helper per connettere un client WebSocket con credenziali
-async fn connect_client(base_url: &str, user_id: i64, username: &str) -> tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>> {
+async fn connect_client(
+    base_url: &str,
+    user_id: i64,
+    username: &str,
+) -> tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>> {
     let token = create_test_token(user_id, username);
     let url = format!("{base_url}?token={token}");
     let (ws, response) = connect_async(&url).await.expect("Connessione fallita");
-    assert_eq!(response.status(), 101, "L'handshake WebSocket deve rispondere con 101");
+    assert_eq!(
+        response.status(),
+        101,
+        "L'handshake WebSocket deve rispondere con 101"
+    );
     ws
 }
 
@@ -61,15 +70,25 @@ async fn test_ws_connection_and_disconnect() {
 
     // Verifica registrazione nella lista clients
     assert_eq!(clients.len().await, 1, "Ci deve essere 1 client registrato");
-    assert!(clients.is_connected(1).await, "L'utente 1 deve risultare connesso");
+    assert!(
+        clients.is_connected(1).await,
+        "L'utente 1 deve risultare connesso"
+    );
 
     // 2. Chiusura del socket (drop)
     drop(ws_stream);
     tokio::time::sleep(Duration::from_millis(50)).await;
 
     // Verifica pulizia automatica
-    assert_eq!(clients.len().await, 0, "Il client disconnesso deve essere rimosso automaticamente");
-    assert!(!clients.is_connected(1).await, "L'utente 1 non deve più risultare connesso");
+    assert_eq!(
+        clients.len().await,
+        0,
+        "Il client disconnesso deve essere rimosso automaticamente"
+    );
+    assert!(
+        !clients.is_connected(1).await,
+        "L'utente 1 non deve più risultare connesso"
+    );
 }
 
 /// TEST 2: Il client invia coordinate di posizione (PositionUpdate) anche senza specificare sender_id
@@ -86,12 +105,18 @@ async fn test_client_sends_position() {
         "lon": 76800,
         "timestamp": "2026-10-16T12:00:00Z"
     });
-    ws_stream.send(Message::Text(json.to_string().into())).await.unwrap();
+    ws_stream
+        .send(Message::Text(json.to_string().into()))
+        .await
+        .unwrap();
 
     tokio::time::sleep(Duration::from_millis(50)).await;
 
     assert_eq!(clients.len().await, 1);
-    assert!(clients.is_connected(101).await, "L'utente 101 deve risultare registrato e connesso");
+    assert!(
+        clients.is_connected(101).await,
+        "L'utente 101 deve risultare registrato e connesso"
+    );
 }
 
 /// TEST 3: Il client invia un messaggio di chat al server
@@ -108,17 +133,26 @@ async fn test_client_sends_chat_message() {
         "contents": "Richiesta rifornimento carburante",
         "timestamp": "2026-10-17T12:00:00Z"
     });
-    ws_client1.send(Message::Text(chat.to_string().into())).await.unwrap();
+    ws_client1
+        .send(Message::Text(chat.to_string().into()))
+        .await
+        .unwrap();
 
     tokio::time::sleep(Duration::from_millis(50)).await;
 
     // 1. Client 2 NON deve ricevere il messaggio (comunicazione diretta client -> server)
     let res = timeout(Duration::from_millis(200), ws_client2.next()).await;
-    assert!(res.is_err(), "Client 2 non deve ricevere il messaggio che Client 1 ha inviato al server");
+    assert!(
+        res.is_err(),
+        "Client 2 non deve ricevere il messaggio che Client 1 ha inviato al server"
+    );
 
     // 2. Client 1 NON riceve alcuna conferma dal server
     let res1 = timeout(Duration::from_millis(200), ws_client1.next()).await;
-    assert!(res1.is_err(), "Client 1 non deve ricevere alcuna conferma o ack dal server");
+    assert!(
+        res1.is_err(),
+        "Client 1 non deve ricevere alcuna conferma o ack dal server"
+    );
 }
 
 /// TEST 4: Il server invia un messaggio in BROADCAST a tutti i client connessi
@@ -142,10 +176,19 @@ async fn test_server_sends_broadcast() {
 
     // Tutti e 3 i client devono ricevere il messaggio contemporaneamente
     for (i, ws) in [&mut ws1, &mut ws2, &mut ws3].into_iter().enumerate() {
-        let msg = timeout(Duration::from_secs(1), ws.next()).await.unwrap().unwrap().unwrap();
+        let msg = timeout(Duration::from_secs(1), ws.next())
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
         if let Message::Text(text) = msg {
             let received: TextMessage = serde_json::from_str(&text).unwrap();
-            assert_eq!(received.contents, "Avviso emergenza meteo a tutta la flotta!", "Client {} non ha ricevuto il testo corretto", i + 1);
+            assert_eq!(
+                received.contents,
+                "Avviso emergenza meteo a tutta la flotta!",
+                "Client {} non ha ricevuto il testo corretto",
+                i + 1
+            );
         } else {
             panic!("Client {} non ha ricevuto Message::Text", i + 1);
         }
@@ -170,17 +213,27 @@ async fn test_server_sends_direct_message_to_user() {
     assert!(sent, "Invio al client 55 deve avere successo");
 
     // Client 1 riceve
-    let msg1 = timeout(Duration::from_secs(1), ws1.next()).await.unwrap().unwrap().unwrap();
+    let msg1 = timeout(Duration::from_secs(1), ws1.next())
+        .await
+        .unwrap()
+        .unwrap()
+        .unwrap();
     if let Message::Text(text) = msg1 {
         let received: TextMessage = serde_json::from_str(&text).unwrap();
-        assert_eq!(received.contents, "Cambio itinerario assegnato al veicolo 55");
+        assert_eq!(
+            received.contents,
+            "Cambio itinerario assegnato al veicolo 55"
+        );
     } else {
         panic!("Client 1 non ha ricevuto testo");
     }
 
     // Client 2 NON riceve nulla
     let msg2 = timeout(Duration::from_millis(200), ws2.next()).await;
-    assert!(msg2.is_err(), "Client 2 non deve ricevere il messaggio privato di Client 1");
+    assert!(
+        msg2.is_err(),
+        "Client 2 non deve ricevere il messaggio privato di Client 1"
+    );
 }
 
 /// TEST 6: Chiusura aggraziata tramite CloseFrame (Message::Close)
@@ -203,7 +256,11 @@ async fn test_graceful_close_frame() {
     tokio::time::sleep(Duration::from_millis(50)).await;
 
     // Il server deve aver rimosso il client
-    assert_eq!(clients.len().await, 0, "Il client che ha inviato Close deve essere rimosso");
+    assert_eq!(
+        clients.len().await,
+        0,
+        "Il client che ha inviato Close deve essere rimosso"
+    );
 }
 
 /// TEST 7: Flusso completo end-to-end con flotta di veicoli
@@ -228,13 +285,19 @@ async fn test_fleet_lifecycle_flow() {
             lon: 2000 * (*id),
             timestamp: Some(chrono::Utc::now().to_rfc3339()),
         };
-        ws.send(Message::Text(serde_json::to_string(&pos).unwrap().into())).await.unwrap();
+        ws.send(Message::Text(serde_json::to_string(&pos).unwrap().into()))
+            .await
+            .unwrap();
     }
     tokio::time::sleep(Duration::from_millis(50)).await;
 
     // Verifichiamo che tutti e 4 siano connessi
     for i in 1..=4 {
-        assert!(clients.is_connected(i).await, "Veicolo {} deve essere connesso", i);
+        assert!(
+            clients.is_connected(i).await,
+            "Veicolo {} deve essere connesso",
+            i
+        );
     }
 
     // 3. La centrale invia broadcast di inizio turno
@@ -245,7 +308,11 @@ async fn test_fleet_lifecycle_flow() {
     clients.send_all(shift_msg).await;
 
     for (id, ws) in fleet.iter_mut() {
-        let msg = timeout(Duration::from_secs(1), ws.next()).await.unwrap().unwrap().unwrap();
+        let msg = timeout(Duration::from_secs(1), ws.next())
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
         if let Message::Text(t) = msg {
             let parsed: TextMessage = serde_json::from_str(&t).unwrap();
             assert_eq!(parsed.contents, "Inizio turno operativo flotta");
@@ -264,7 +331,11 @@ async fn test_fleet_lifecycle_flow() {
 
     // Solo il veicolo 3 deve riceverlo
     let (_, ws3) = &mut fleet[2];
-    let msg3 = timeout(Duration::from_secs(1), ws3.next()).await.unwrap().unwrap().unwrap();
+    let msg3 = timeout(Duration::from_secs(1), ws3.next())
+        .await
+        .unwrap()
+        .unwrap()
+        .unwrap();
     if let Message::Text(t) = msg3 {
         let parsed: TextMessage = serde_json::from_str(&t).unwrap();
         assert_eq!(parsed.contents, "Raggiungere waypoint Charlie");
@@ -274,7 +345,11 @@ async fn test_fleet_lifecycle_flow() {
     for (id, ws) in fleet.iter_mut() {
         if *id != 3 {
             let timeout_res = timeout(Duration::from_millis(150), ws.next()).await;
-            assert!(timeout_res.is_err(), "Veicolo {} non doveva ricevere l'ordine per il veicolo 3", id);
+            assert!(
+                timeout_res.is_err(),
+                "Veicolo {} non doveva ricevere l'ordine per il veicolo 3",
+                id
+            );
         }
     }
 }
@@ -290,7 +365,10 @@ async fn test_unauthorized_connection_rejected() {
 
     // Tentativo con token invalido
     let res_invalid = connect_async(&format!("{server_url}?token=token_invalido")).await;
-    assert!(res_invalid.is_err(), "Connessione con token invalido deve fallire");
+    assert!(
+        res_invalid.is_err(),
+        "Connessione con token invalido deve fallire"
+    );
 }
 
 /// TEST 9: MessageRepository salva nel database il timestamp calcolato dal client
@@ -298,13 +376,20 @@ async fn test_unauthorized_connection_rejected() {
 async fn test_save_position_uses_client_timestamp() {
     use std::str::FromStr;
     let options = sqlx::sqlite::SqliteConnectOptions::from_str("sqlite::memory:").unwrap();
-    let pool = sqlx::sqlite::SqlitePoolOptions::new().connect_with(options).await.unwrap();
+    let pool = sqlx::sqlite::SqlitePoolOptions::new()
+        .connect_with(options)
+        .await
+        .unwrap();
 
     sqlx::query("CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT NOT NULL, password_hash TEXT NOT NULL);").execute(&pool).await.unwrap();
     sqlx::query("CREATE TABLE positions (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, lat INTEGER NOT NULL, lon INTEGER NOT NULL, timestamp DATETIME NOT NULL, FOREIGN KEY(user_id) REFERENCES users(id));").execute(&pool).await.unwrap();
-    sqlx::query("INSERT INTO users VALUES (42, 'vehicle_42', 'hash');").execute(&pool).await.unwrap();
+    sqlx::query("INSERT INTO users VALUES (42, 'vehicle_42', 'hash');")
+        .execute(&pool)
+        .await
+        .unwrap();
 
-    let repo = georuggine_server::messages::message_repository::MessageRepository::new(pool.clone());
+    let repo =
+        georuggine_server::messages::message_repository::MessageRepository::new(pool.clone());
     let client_time = "2026-10-16T12:30:00+02:00".to_string();
     let pos = PositionUpdate {
         lat: 12345,
@@ -314,11 +399,12 @@ async fn test_save_position_uses_client_timestamp() {
     let timestamp = pos.timestamp.as_deref().unwrap();
     repo.save_position(42, &pos, timestamp).await.unwrap();
 
-    let record: (i64, i64, String) = sqlx::query_as("SELECT lat, lon, timestamp FROM positions WHERE user_id = ?")
-        .bind(42)
-        .fetch_one(&pool)
-        .await
-        .unwrap();
+    let record: (i64, i64, String) =
+        sqlx::query_as("SELECT lat, lon, timestamp FROM positions WHERE user_id = ?")
+            .bind(42)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
 
     assert_eq!(record.0, 12345);
     assert_eq!(record.1, 67890);

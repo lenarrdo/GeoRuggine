@@ -15,11 +15,11 @@ use std::ops::ControlFlow;
 use std::sync::Arc;
 use tokio::sync::mpsc::{self};
 
-use crate::AppState;
 use crate::auth::services::token_service;
 use crate::messages::{
     ClientIncomingMessage, Coordinates, TextMessage, message_repository::MessageRepository,
 };
+use crate::shared::app_state::AppState;
 use crate::tui::AppEvent;
 use crate::websocket::clients::ConnectedClient;
 

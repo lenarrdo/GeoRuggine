@@ -39,26 +39,21 @@ impl MessageRepository {
             .bind(user_id)
             .bind(position.lat)
             .bind(position.lon)
-            .bind(position.received_at().to_rfc3339())
+            .bind(position.received_at().to_string())
             .execute(&self.db_pool)
             .await?;
 
         Ok(())
     }
 
-    // FIXME
-    // pub async fn get_messages_for_user(
-    //     db_pool: &SqlitePool,
-    //     user_id: u32,
-    // ) -> Result<Vec<ChatMessage>, sqlx::Error> {
-    //     let records = sqlx::query_as::<_, ChatMessage>(
-    //         "SELECT message_id, sender_id, receiver_id, timestamp, contents FROM messages WHERE sender_id = ? OR receiver_id = ? ORDER BY timestamp ASC",
-    //     )
-    //     .bind(user_id)
-    //     .bind(user_id)
-    //     .fetch_all(db_pool)
-    //     .await?;
-    //
-    //     Ok(records)
-    // }
+    pub async fn get_positions(&self, user_id: u32) -> Result<(), sqlx::Error> {
+        sqlx::query_as::<_, Coordinates>(
+            "SELECT lat, lon, timestamp AS received_at FROM positions WHERE user_id = ?",
+        )
+        .bind(user_id)
+        .fetch_all(&self.db_pool)
+        .await?;
+
+        Ok(())
+    }
 }

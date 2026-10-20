@@ -1,8 +1,9 @@
 pub mod message_repository;
+pub mod message_service;
 
 use std::fmt::Display;
 
-use chrono::{DateTime, Local};
+use chrono::{Local, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 
 /// Tipi di messaggi che il client può inviare al server
@@ -30,14 +31,22 @@ impl TextMessage {
 }
 
 /// Coordinate geografiche inviate dal client al server (il timestamp viene calcolato dal client)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Coordinates {
     lat: f64,
     lon: f64,
-    received_at: DateTime<Local>,
+    received_at: NaiveDateTime,
 }
 
 impl Coordinates {
+    pub fn new(lat: f64, lon: f64, received_at: NaiveDateTime) -> Self {
+        Coordinates {
+            lat,
+            lon,
+            received_at,
+        }
+    }
+
     /// Haversine formula implementation to compute the distance between `self` and `other`.
     pub fn distance_from(&self, other: &Coordinates) -> f64 {
         const EARTH_RADIUS_KM: f64 = 6371.0;
@@ -56,7 +65,7 @@ impl Coordinates {
         EARTH_RADIUS_KM * c
     }
 
-    pub fn received_at(&self) -> DateTime<Local> {
+    pub fn received_at(&self) -> NaiveDateTime {
         self.received_at
     }
 
@@ -69,19 +78,9 @@ impl Coordinates {
     }
 }
 
-impl PartialEq for Coordinates {
+impl PartialEq for &Coordinates {
     fn eq(&self, other: &Self) -> bool {
         self.lat == other.lat && self.lon == other.lon
-    }
-}
-
-impl Coordinates {
-    pub fn new(lat: f64, lon: f64) -> Self {
-        Coordinates {
-            lat,
-            lon,
-            received_at: Local::now(),
-        }
     }
 }
 

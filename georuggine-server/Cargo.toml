@@ -13,7 +13,7 @@ futures-util = { version = "0.3.34", features = ["sink"] }
 tower-http = { version = "0.7.1", features = ["cors"] }
 
 # database
-sqlx = { version = "0.9", features = ["runtime-tokio", "sqlite"] }
+sqlx = { version = "0.9", features = ["runtime-tokio", "sqlite", "chrono"] }
 argon2 = "0.6.0"
 password-hash = "0.6.1"
 

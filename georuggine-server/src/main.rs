@@ -1,9 +1,3 @@
-pub mod auth;
-pub mod messages;
-pub mod shared;
-pub mod tui;
-pub mod websocket;
-
 use axum::{
     Router,
     routing::{get, post},
@@ -11,10 +5,10 @@ use axum::{
 use std::{net::SocketAddr, sync::Arc};
 use tokio::sync::mpsc;
 
-use crate::auth::{handle_login, handle_registration, user_repository::UserRepository};
-use crate::shared::{app_state::AppState, database as db};
-use crate::tui::App;
-use crate::websocket::{clients::ClientsList, ws_handler};
+use georuggine_server::auth::{handle_login, handle_registration, user_repository::UserRepository};
+use georuggine_server::shared::{app_state::AppState, database as db};
+use georuggine_server::tui::App;
+use georuggine_server::websocket::{clients::ClientsList, ws_handler};
 
 pub const HOST: &str = "127.0.0.1";
 pub const PORT: &str = "3000";
