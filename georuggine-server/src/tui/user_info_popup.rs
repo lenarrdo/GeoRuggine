@@ -1,3 +1,4 @@
+use chrono::Duration;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     Frame,
@@ -9,6 +10,23 @@ use ratatui::{
 
 use crate::tui::user_list::User;
 
+pub enum Tab {
+    Daily,
+    Weekly,
+    Monthly,
+}
+
+impl Tab {
+    pub fn from_index(index: usize) -> Option<Self> {
+        match index {
+            0 => Some(Tab::Daily),
+            1 => Some(Tab::Weekly),
+            2 => Some(Tab::Monthly),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct UserInfoPopup {
     // popup info
@@ -18,6 +36,8 @@ pub struct UserInfoPopup {
     // selected user info
     pub user: User,
     pub avg_speed: f64,
+    pub time_moving: Duration,
+    pub time_not_moving: Duration,
 }
 
 impl UserInfoPopup {
@@ -48,27 +68,31 @@ impl UserInfoPopup {
 
     fn render_content(&self, frame: &mut Frame, area: Rect) {
         let info = format!(
-            "ID: {}\nUsername: {}\nStatus: {}\nAverage Speed: {:.2} km/h\n",
-            self.user.id, self.user.username, self.user.status, self.avg_speed
+            "ID: {}\nUsername: {}\nStatus: {}\nAverage Speed: {:.2} km/h\nTime Moving: {}\nTime Not Moving: {}\n",
+            self.user.id,
+            self.user.username,
+            self.user.status,
+            self.avg_speed,
+            self.time_moving.to_string(),
+            self.time_not_moving.to_string()
         );
-        let text = match self.selected_tab {
-            0 => &info,
-            1 => "todo!()",
-            2 => "todo!()",
-            _ => unreachable!(),
-        };
-        let block = Paragraph::new(text)
+        let block = Paragraph::new(info)
             .alignment(Alignment::Left)
             .block(Block::bordered());
         frame.render_widget(block, area);
     }
 
-    pub fn handle_key(&mut self, key: KeyEvent) {
+    pub fn handle_key(&mut self, key: KeyEvent) -> (u32, Option<Tab>) {
         match key.code {
-            KeyCode::Esc | KeyCode::Char('q') => self.visible = false,
+            KeyCode::Esc | KeyCode::Char('q') => {
+                self.visible = false;
+                return (self.user.id, None);
+            }
             KeyCode::Char('l') | KeyCode::Right => self.selected_tab = (self.selected_tab + 1) % 3,
             KeyCode::Char('h') | KeyCode::Left => self.selected_tab = (self.selected_tab + 2) % 3,
             _ => {}
         };
+
+        (self.user.id, Tab::from_index(self.selected_tab))
     }
 }

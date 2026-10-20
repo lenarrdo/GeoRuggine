@@ -4,6 +4,7 @@ pub mod user_list;
 
 use std::{sync::Arc, time::Duration};
 
+use chrono::TimeDelta;
 use crossterm::event::{Event as CrosstermEvent, EventStream, KeyCode, KeyEvent};
 use futures::StreamExt;
 use ratatui::{
@@ -16,6 +17,7 @@ use tokio::sync::mpsc::Receiver;
 
 use crate::{
     auth::user_repository::UserEntity,
+    messages::{message_repository::MessageRepository, message_service},
     shared::app_state::AppState,
     tui::{
         message_popup::MessagePopup,
@@ -51,23 +53,23 @@ pub struct App {
 impl App {
     pub fn new(
         rx: Receiver<AppEvent>,
-        _user_entities: Vec<UserEntity>,
+        user_entities: Vec<UserEntity>,
         state: Arc<AppState>,
     ) -> Self {
-        // let users = user_entities
-        //     .iter()
-        //     .map(|user_entity| User::new(user_entity.id, &user_entity.username))
-        //     .collect();
+        let users = user_entities
+            .iter()
+            .map(|user_entity| User::new(user_entity.id, &user_entity.username))
+            .collect();
 
         App {
             exit: false,
-            // user_list: UserList::new(users),
+            user_list: UserList::new(users),
             // user_list: UserList::default(),
-            user_list: UserList::new(vec![
-                User::new(1, "User 1"),
-                User::new(2, "User 2"),
-                User::new(3, "User 3"),
-            ]),
+            // user_list: UserList::new(vec![
+            //     User::new(1, "User 1"),
+            //     User::new(2, "User 2"),
+            //     User::new(3, "User 3"),
+            // ]),
             message_popup: MessagePopup::default(),
             user_info_popup: UserInfoPopup::default(),
             rx,
@@ -128,7 +130,18 @@ impl App {
             }
             return;
         } else if self.user_info_popup.visible {
-            return self.user_info_popup.handle_key(key);
+            let (user_id, new_tab) = self.user_info_popup.handle_key(key);
+            let msg_repo = MessageRepository::new(self.state.db.clone());
+            let positions = msg_repo.get_positions(user_id).await;
+            if let Some(_tab) = new_tab
+                && let Ok(pos) = positions
+            {
+                let (time_moving, time_not_moving) = message_service::get_movement_stats(&pos);
+                self.user_info_popup.time_moving = time_moving;
+                self.user_info_popup.time_not_moving = time_not_moving;
+            }
+
+            return;
         }
 
         match key.code {

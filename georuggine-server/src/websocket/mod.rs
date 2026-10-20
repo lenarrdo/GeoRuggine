@@ -83,14 +83,11 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, state: Arc<AppState>
     });
 
     let state_clone = Arc::clone(&state);
-    let tui_tx_clone = state.tx.clone();
-    let message_repo = MessageRepository::new(state.db.clone());
-
     let mut recv_task = tokio::spawn(async move {
-        let mut cnt = 0;
+        let mut nof_processed_messages = 0;
 
+        let message_repo = MessageRepository::new(state_clone.db.clone());
         while let Some(Ok(msg)) = ws_receiver.next().await {
-            cnt += 1;
             let result = process_message(msg, user_id, &message_repo).await;
             if result.is_break() {
                 break;
@@ -102,11 +99,13 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, state: Arc<AppState>
                     AppEvent::UserStopped(user_id)
                 };
 
-                tui_tx_clone.send(event).await.unwrap();
+                state_clone.tx.send(event).await.unwrap();
             }
+
+            nof_processed_messages += 1;
         }
 
-        cnt
+        nof_processed_messages
     });
 
     tokio::select! {

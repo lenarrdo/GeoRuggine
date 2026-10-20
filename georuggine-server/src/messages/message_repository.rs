@@ -39,21 +39,21 @@ impl MessageRepository {
             .bind(user_id)
             .bind(position.lat)
             .bind(position.lon)
-            .bind(position.received_at().to_string())
+            .bind(position.received_at().to_rfc3339())
             .execute(&self.db_pool)
             .await?;
 
         Ok(())
     }
 
-    pub async fn get_positions(&self, user_id: u32) -> Result<(), sqlx::Error> {
-        sqlx::query_as::<_, Coordinates>(
-            "SELECT lat, lon, timestamp AS received_at FROM positions WHERE user_id = ?",
+    pub async fn get_positions(&self, user_id: u32) -> Result<Vec<Coordinates>, sqlx::Error> {
+        let positions = sqlx::query_as::<_, Coordinates>(
+            "SELECT lat, lon, timestamp FROM positions WHERE user_id = ?",
         )
         .bind(user_id)
         .fetch_all(&self.db_pool)
         .await?;
 
-        Ok(())
+        Ok(positions)
     }
 }
