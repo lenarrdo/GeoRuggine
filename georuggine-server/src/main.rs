@@ -22,7 +22,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app_state = Arc::new(AppState::new(
         db::init(false).await?,
         ClientsList::new(),
-        tx.clone(),
+        tx,
     ));
     let router = Router::new()
         .route(
