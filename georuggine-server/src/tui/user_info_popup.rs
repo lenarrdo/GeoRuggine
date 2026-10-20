@@ -1,4 +1,3 @@
-use chrono::Duration;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     Frame,
@@ -36,8 +35,8 @@ pub struct UserInfoPopup {
     // selected user info
     pub user: User,
     pub avg_speed: f64,
-    pub time_moving: Duration,
-    pub time_not_moving: Duration,
+    pub time_moving: String,
+    pub time_not_moving: String,
 }
 
 impl UserInfoPopup {

@@ -4,7 +4,6 @@ pub mod user_list;
 
 use std::{sync::Arc, time::Duration};
 
-use chrono::TimeDelta;
 use crossterm::event::{Event as CrosstermEvent, EventStream, KeyCode, KeyEvent};
 use futures::StreamExt;
 use ratatui::{
@@ -18,7 +17,7 @@ use tokio::sync::mpsc::Receiver;
 use crate::{
     auth::user_repository::UserEntity,
     messages::{message_repository::MessageRepository, message_service},
-    shared::app_state::AppState,
+    shared::{app_state::AppState, utils},
     tui::{
         message_popup::MessagePopup,
         user_info_popup::UserInfoPopup,
@@ -137,8 +136,9 @@ impl App {
                 && let Ok(pos) = positions
             {
                 let (time_moving, time_not_moving) = message_service::get_movement_stats(&pos);
-                self.user_info_popup.time_moving = time_moving;
-                self.user_info_popup.time_not_moving = time_not_moving;
+                self.user_info_popup.time_moving = utils::format_chrono_duration(time_moving);
+                self.user_info_popup.time_not_moving =
+                    utils::format_chrono_duration(time_not_moving);
             }
 
             return;
