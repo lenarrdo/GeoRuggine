@@ -3,7 +3,7 @@ pub mod message_service;
 
 use std::fmt::Display;
 
-use chrono::{Local, NaiveDateTime};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 /// Tipi di messaggi che il client può inviare al server
@@ -25,7 +25,7 @@ impl TextMessage {
     pub fn new(contents: String) -> Self {
         TextMessage {
             contents,
-            timestamp: Local::now().format("%Y-%m-%dT%H:%M:%S").to_string(),
+            timestamp: Utc::now().to_rfc3339(),
         }
     }
 }
@@ -35,15 +35,15 @@ impl TextMessage {
 pub struct Coordinates {
     lat: f64,
     lon: f64,
-    received_at: NaiveDateTime,
+    timestamp: DateTime<Utc>,
 }
 
 impl Coordinates {
-    pub fn new(lat: f64, lon: f64, received_at: NaiveDateTime) -> Self {
+    pub fn new(lat: f64, lon: f64, timestamp: DateTime<Utc>) -> Self {
         Coordinates {
             lat,
             lon,
-            received_at,
+            timestamp,
         }
     }
 
@@ -65,8 +65,8 @@ impl Coordinates {
         EARTH_RADIUS_KM * c
     }
 
-    pub fn received_at(&self) -> NaiveDateTime {
-        self.received_at
+    pub fn received_at(&self) -> DateTime<Utc> {
+        self.timestamp
     }
 
     pub fn lat(&self) -> f64 {

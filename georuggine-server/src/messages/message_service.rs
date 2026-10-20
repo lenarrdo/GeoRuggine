@@ -20,9 +20,9 @@ pub fn get_movement_stats(positions: &Vec<Coordinates>) -> (Duration, Duration) 
         let prev_pos = &window[0];
         let curr_pos = &window[1];
 
-        let delta_t = curr_pos.received_at - prev_pos.received_at;
+        let delta_t = curr_pos.timestamp - prev_pos.timestamp;
         let threshold_passed =
-            curr_pos.received_at - first_consecutive_position.received_at > INACTIVE_THRESHOLD;
+            curr_pos.timestamp - first_consecutive_position.timestamp > INACTIVE_THRESHOLD;
 
         if prev_pos != curr_pos {
             time_moving += delta_t;

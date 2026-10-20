@@ -1,4 +1,4 @@
-use chrono::{Duration, NaiveDate, NaiveTime, TimeDelta, Utc};
+use chrono::{DateTime, Duration, TimeDelta, Utc};
 use georuggine_server::messages::{Coordinates, message_service};
 
 #[tokio::test]
@@ -12,7 +12,7 @@ async fn no_positions() {
 
 #[tokio::test]
 async fn one_position() {
-    let positions: Vec<Coordinates> = vec![Coordinates::new(10.0, 10.0, Utc::now().naive_utc())];
+    let positions: Vec<Coordinates> = vec![Coordinates::new(10.0, 10.0, Utc::now())];
     let (t_moving, t_not_moving) = message_service::get_movement_stats(&positions);
 
     // one position is not enough data to compute time spent moving
@@ -22,9 +22,8 @@ async fn one_position() {
 
 #[tokio::test]
 async fn user_moving_two_positions() {
-    let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
-    let t = NaiveTime::from_hms_opt(12, 34, 56).unwrap();
-    let dt = d.and_time(t);
+    // Usiamo direttamente una stringa in formato RFC 3339
+    let dt = "2015-06-03T12:34:56Z".parse::<DateTime<Utc>>().unwrap();
 
     let positions: Vec<Coordinates> = vec![
         Coordinates::new(10.0, 10.0, dt),
@@ -41,9 +40,7 @@ async fn user_moving_two_positions() {
 
 #[tokio::test]
 async fn user_moving_many_positions() {
-    let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
-    let t = NaiveTime::from_hms_opt(12, 34, 56).unwrap();
-    let dt = d.and_time(t);
+    let dt = "2015-06-03T12:34:56Z".parse::<DateTime<Utc>>().unwrap();
 
     let positions: Vec<Coordinates> = vec![
         Coordinates::new(10.0, 10.0, dt),
@@ -63,9 +60,7 @@ async fn user_moving_many_positions() {
 
 #[tokio::test]
 async fn pause_is_detected() {
-    let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
-    let t = NaiveTime::from_hms_opt(12, 34, 56).unwrap();
-    let dt = d.and_time(t);
+    let dt = "2015-06-03T12:34:56Z".parse::<DateTime<Utc>>().unwrap();
 
     let mut positions: Vec<Coordinates> = vec![];
     for i in 0..=5 {
@@ -92,9 +87,7 @@ async fn pause_is_detected() {
 
 #[tokio::test]
 async fn movement_and_pause() {
-    let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
-    let t = NaiveTime::from_hms_opt(12, 34, 56).unwrap();
-    let dt = d.and_time(t);
+    let dt = "2015-06-03T12:34:56Z".parse::<DateTime<Utc>>().unwrap();
 
     let mut positions: Vec<Coordinates> = vec![];
 
