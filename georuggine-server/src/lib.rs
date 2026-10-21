@@ -1,8 +1,8 @@
 pub mod auth;
 pub mod database;
+pub mod logger;
 pub mod messages;
 pub mod websocket;
-
 use crate::auth::{handle_login, handle_registration};
 use crate::websocket::ws_handler;
 use axum::{

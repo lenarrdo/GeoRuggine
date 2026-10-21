@@ -3,6 +3,10 @@ use std::net::SocketAddr;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    georuggine_server::logger::start_cpu_logger(
+        std::time::Duration::from_secs(120),
+        "cpu_usage.log",
+    );
     let db_pool = db::init(true).await?;
     let clients = ClientsList::new();
 
@@ -23,4 +27,3 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-
