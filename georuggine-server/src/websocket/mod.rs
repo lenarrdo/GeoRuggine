@@ -17,9 +17,7 @@ use std::{
 };
 
 use crate::auth::services::token_service;
-use crate::messages::{
-    ClientIncomingMessage, Coordinates, TextMessage, message_repository::MessageRepository,
-};
+use crate::messages::{ClientIncomingMessage, TextMessage, message_repository::MessageRepository};
 use crate::shared::app_state::AppState;
 use crate::tui::AppEvent;
 use crate::websocket::clients::ConnectedClient;
@@ -73,6 +71,11 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, state: Arc<AppState>
         .send(AppEvent::ClientConnected(user_id))
         .await
         .unwrap();
+    state
+        .tx
+        .send(AppEvent::LogMessage(format!("User #{user_id} connected.")))
+        .await
+        .unwrap();
 
     let mut send_task = tokio::spawn(async move {
         while let Ok(msg) = rx.recv() {
@@ -87,20 +90,10 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, state: Arc<AppState>
     let mut recv_task = tokio::spawn(async move {
         let mut nof_processed_messages = 0;
 
-        let message_repo = MessageRepository::new(state_clone.db.clone());
         while let Some(Ok(msg)) = ws_receiver.next().await {
-            let result = process_message(msg, user_id, &message_repo).await;
+            let result = process_message(msg, user_id, Arc::clone(&state_clone)).await;
             if result.is_break() {
                 break;
-            } else if let Some(pos) = result.continue_value().unwrap() {
-                state_clone.clients.record_position(user_id, pos);
-                let event = if let true = state_clone.clients.is_moving(user_id) {
-                    AppEvent::UserMoving(user_id)
-                } else {
-                    AppEvent::UserStopped(user_id)
-                };
-
-                state_clone.tx.send(event).await.unwrap();
             }
 
             nof_processed_messages += 1;
@@ -131,49 +124,68 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, state: Arc<AppState>
         .send(AppEvent::ClientDisconnected(user_id))
         .await
         .unwrap();
+    state
+        .tx
+        .send(AppEvent::LogMessage(format!(
+            "User #{user_id} disconnected."
+        )))
+        .await
+        .unwrap();
 }
 
 /// Elabora i singoli messaggi ricevuti dal client via WebSocket.
 pub async fn process_message(
     msg: Message,
     user_id: u32,
-    message_repo: &MessageRepository,
-) -> ControlFlow<(), Option<Coordinates>> {
-    let mut new_position = None;
+    state: Arc<AppState>,
+) -> ControlFlow<(), ()> {
+    let message_repo = MessageRepository::new(state.db.clone());
     match msg {
-        Message::Text(t) => {
-            match serde_json::from_str::<ClientIncomingMessage>(&t) {
-                Ok(ClientIncomingMessage::Position(pos)) => {
-                    if let Err(_e) = message_repo.save_position(user_id, &pos).await {
-                        // eprintln!("Errore salvataggio posizione nel DB per user_id {user_id}: {e}");
-                    }
+        Message::Text(t) => match serde_json::from_str::<ClientIncomingMessage>(&t) {
+            Ok(ClientIncomingMessage::Position(pos)) => {
+                let _err = message_repo.save_position(user_id, &pos).await;
+                state
+                    .tx
+                    .send(AppEvent::LogMessage(format!(
+                        "Received coordinates {} from User {user_id}.",
+                        pos
+                    )))
+                    .await
+                    .unwrap();
 
-                    // println!(
-                    //     ">>> [COORDINATE DA CLIENT] Da user_id {user_id}: x={}, y={}, time={timestamp}",
-                    //     pos.lat, pos.lon
-                    // );
+                state.clients.record_position(user_id, pos);
+                let event = if let true = state.clients.is_moving(user_id) {
+                    AppEvent::UserMoving(user_id)
+                } else {
+                    AppEvent::UserStopped(user_id)
+                };
 
-                    new_position = Some(pos);
-                }
-                Ok(ClientIncomingMessage::Text(chat_msg)) => {
-                    // println!(
-                    //     ">>> [MESSAGGIO AL SERVER] Da user_id {user_id} ({}): `{}`",
-                    //     chat_msg.timestamp, chat_msg.contents
-                    // );
-
-                    // Il server associa sender_id = user_id, receiver_id = None (Centrale/Server) e timestamp fornito dal client
-                    if let Err(_e) = message_repo
-                        .save_text_message(user_id, None, &chat_msg, &chat_msg.timestamp)
-                        .await
-                    {
-                        // eprintln!("Errore salvataggio messaggio nel DB per user_id {user_id}: {e}");
-                    }
-                }
-                Err(_) => {
-                    // println!(">>> {user_id} ha inviato testo generico non strutturato: {t:?}")
-                }
+                state.tx.send(event).await.unwrap();
             }
-        }
+            Ok(ClientIncomingMessage::Text(msg)) => {
+                state
+                    .tx
+                    .send(AppEvent::LogMessage(format!(
+                        "New message from User #{user_id}: {}",
+                        msg.contents
+                    )))
+                    .await
+                    .unwrap();
+
+                let _err = message_repo
+                    .save_text_message(user_id, None, &msg, &msg.timestamp)
+                    .await;
+            }
+            Err(_) => {
+                state
+                    .tx
+                    .send(AppEvent::LogMessage(format!(
+                        "Received unstructured message from User {user_id}: \"{t}\""
+                    )))
+                    .await
+                    .unwrap();
+            }
+        },
         Message::Close(c) => {
             if let Some(_cf) = c {
                 // println!(
@@ -185,10 +197,8 @@ pub async fn process_message(
             }
             return ControlFlow::Break(());
         }
-        _other => {
-            // println!(">>> {user_id} ha inviato un messaggio di servizio/altro: {other:?}");
-        }
+        _ => {}
     }
 
-    ControlFlow::Continue(new_position)
+    ControlFlow::Continue(())
 }

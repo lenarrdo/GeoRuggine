@@ -5,10 +5,13 @@ use axum::{
 use std::{net::SocketAddr, sync::Arc};
 use tokio::sync::mpsc;
 
-use georuggine_server::auth::{handle_login, handle_registration, user_repository::UserRepository};
 use georuggine_server::shared::{app_state::AppState, database as db};
 use georuggine_server::tui::App;
 use georuggine_server::websocket::{clients::ClientsList, ws_handler};
+use georuggine_server::{
+    auth::{handle_login, handle_registration, user_repository::UserRepository},
+    tui::AppEvent,
+};
 
 pub const HOST: &str = "127.0.0.1";
 pub const PORT: &str = "3000";
@@ -22,7 +25,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app_state = Arc::new(AppState::new(
         db::init(false).await?,
         ClientsList::new(),
-        tx,
+        tx.clone(),
     ));
     let router = Router::new()
         .route(
@@ -37,7 +40,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await
         .unwrap();
 
-    // println!("Server listening on http://{HOST}:{PORT}");
+    tx.send(AppEvent::LogMessage(format!(
+        "Server listening on http://{HOST}:{PORT}"
+    )))
+    .await
+    .unwrap();
 
     tokio::spawn(async move {
         axum::serve(

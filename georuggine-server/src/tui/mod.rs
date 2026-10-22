@@ -1,3 +1,4 @@
+pub mod logs_tab;
 pub mod message_popup;
 pub mod user_info_popup;
 pub mod user_list;
@@ -19,6 +20,7 @@ use crate::{
     messages::message_repository::MessageRepository,
     shared::app_state::AppState,
     tui::{
+        logs_tab::LogsTab,
         message_popup::MessagePopup,
         user_info_popup::UserInfoPopup,
         user_list::{User, UserList, UserStatus},
@@ -49,6 +51,7 @@ pub enum AppEvent {
     ClientDisconnected(u32),
     UserMoving(u32),
     UserStopped(u32),
+    LogMessage(String),
     Tick,
 }
 
@@ -60,6 +63,7 @@ pub struct App {
     user_list: UserList,
     message_popup: MessagePopup,
     user_info_popup: UserInfoPopup,
+    logs_tab: LogsTab,
 
     // domain info
     rx: Receiver<AppEvent>,
@@ -88,6 +92,7 @@ impl App {
             // ]),
             message_popup: MessagePopup::default(),
             user_info_popup: UserInfoPopup::default(),
+            logs_tab: LogsTab::default(),
             rx,
             state,
         }
@@ -126,6 +131,7 @@ impl App {
                         AppEvent::UserMoving(user_id) => self.user_list.set_status(user_id, UserStatus::Moving),
                         AppEvent::UserStopped(user_id) => self.user_list.set_status(user_id, UserStatus::Still),
                         AppEvent::Tick => self.user_list.scan_inactive(),
+                        AppEvent::LogMessage(msg) => self.logs_tab.add_message(msg),
                     }
                 }
             }
@@ -195,7 +201,7 @@ impl App {
         let [chat, logs_stats] =
             Layout::vertical([Constraint::Percentage(75), Constraint::Fill(1)]).areas(info);
         let [logs, stats] =
-            Layout::horizontal([Constraint::Percentage(50), Constraint::Fill(1)]).areas(logs_stats);
+            Layout::horizontal([Constraint::Percentage(75), Constraint::Fill(1)]).areas(logs_stats);
 
         let rounded_block = |title| {
             Block::bordered()
@@ -206,12 +212,13 @@ impl App {
         self.user_list
             .render(rounded_block("Users"), frame, user_bar);
         frame.render_widget(rounded_block("Chat"), chat);
-        frame.render_widget(rounded_block("Logs"), logs);
-        frame.render_widget(rounded_block("Stats"), stats);
+        frame.render_widget(rounded_block("CPU Usage"), stats);
         frame.render_widget(
             Paragraph::new("Use ↓↑ to move, g/G to go top/bottom, q to quit."),
             footer,
         );
+
+        self.logs_tab.render(rounded_block("Logs"), frame, logs);
 
         self.user_info_popup.render(frame);
 
