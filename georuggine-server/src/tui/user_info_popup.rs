@@ -7,7 +7,7 @@ use ratatui::{
     widgets::{Block, Clear, Paragraph, Tabs},
 };
 
-use crate::tui::user_list::User;
+use crate::tui::{TimeFrame, user_list::User};
 
 pub enum Tab {
     Daily,
@@ -81,7 +81,7 @@ impl UserInfoPopup {
         frame.render_widget(block, area);
     }
 
-    pub fn handle_key(&mut self, key: KeyEvent) -> (u32, Option<Tab>) {
+    pub fn handle_key(&mut self, key: KeyEvent) -> (u32, Option<TimeFrame>) {
         match key.code {
             KeyCode::Esc | KeyCode::Char('q') => {
                 self.visible = false;
@@ -92,6 +92,6 @@ impl UserInfoPopup {
             _ => {}
         };
 
-        (self.user.id, Tab::from_index(self.selected_tab))
+        (self.user.id, TimeFrame::from_index(self.selected_tab))
     }
 }
