@@ -97,7 +97,7 @@ impl App {
             tokio::select! {
                 Some(Ok(crossterm_event)) = reader.next() => {
                     match crossterm_event {
-                        CrosstermEvent::Key(key) =>self.handle_key(key).await,
+                        CrosstermEvent::Key(key) => self.handle_key(key).await,
                         _ => {}
                     }
 
@@ -124,7 +124,7 @@ impl App {
                 let msg = msg.unwrap();
                 let previously_selected = self.user_list.clear_selected_users();
                 for user_id in previously_selected {
-                    self.state.clients.send_one(user_id, &msg).await;
+                    self.state.clients.send_one(user_id, &msg);
                 }
             }
             return;
@@ -158,7 +158,6 @@ impl App {
                         .state
                         .clients
                         .get_avg_speed(user.id)
-                        .await
                         .unwrap_or_default();
                     self.user_info_popup.user = user;
 

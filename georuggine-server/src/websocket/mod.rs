@@ -11,9 +11,10 @@ use axum::{
 };
 use futures_util::{sink::SinkExt, stream::StreamExt};
 use serde::{Deserialize, Serialize};
-use std::ops::ControlFlow;
-use std::sync::Arc;
-use tokio::sync::mpsc::{self};
+use std::{
+    ops::ControlFlow,
+    sync::{Arc, mpsc},
+};
 
 use crate::auth::services::token_service;
 use crate::messages::{
@@ -49,7 +50,7 @@ pub async fn ws_handler(
         )
     })?;
 
-    if state.clients.is_connected(claims.user_id).await {
+    if state.clients.is_connected(claims.user_id) {
         return Err((
             StatusCode::FORBIDDEN,
             Json(WsResponse {
@@ -64,9 +65,9 @@ pub async fn ws_handler(
 /// Gestisce l'intero ciclo di vita di una singola connessione WebSocket attiva.
 pub async fn handle_socket(socket: WebSocket, user_id: u32, state: Arc<AppState>) {
     let (mut ws_sender, mut ws_receiver) = socket.split();
-    let (tx, mut rx) = mpsc::unbounded_channel::<TextMessage>();
+    let (tx, rx) = mpsc::channel::<TextMessage>();
 
-    state.clients.add(user_id, ConnectedClient::new(tx)).await;
+    state.clients.add(user_id, ConnectedClient::new(tx));
     state
         .tx
         .send(AppEvent::ClientConnected(user_id))
@@ -74,7 +75,7 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, state: Arc<AppState>
         .unwrap();
 
     let mut send_task = tokio::spawn(async move {
-        while let Some(msg) = rx.recv().await {
+        while let Ok(msg) = rx.recv() {
             let json = serde_json::to_string(&msg).unwrap_or_default();
             if ws_sender.send(Message::Text(json.into())).await.is_err() {
                 break;
@@ -92,8 +93,8 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, state: Arc<AppState>
             if result.is_break() {
                 break;
             } else if let Some(pos) = result.continue_value().unwrap() {
-                state_clone.clients.record_position(user_id, pos).await;
-                let event = if let true = state_clone.clients.is_moving(user_id).await {
+                state_clone.clients.record_position(user_id, pos);
+                let event = if let true = state_clone.clients.is_moving(user_id) {
                     AppEvent::UserMoving(user_id)
                 } else {
                     AppEvent::UserStopped(user_id)
@@ -124,7 +125,7 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, state: Arc<AppState>
         }
     }
 
-    state.clients.remove(user_id).await;
+    state.clients.remove(user_id);
     state
         .tx
         .send(AppEvent::ClientDisconnected(user_id))

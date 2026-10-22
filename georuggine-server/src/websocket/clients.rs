@@ -1,18 +1,18 @@
 use chrono::Duration;
 use std::collections::HashMap;
-use tokio::sync::{RwLock, mpsc};
+use std::sync::{RwLock, mpsc};
 
 use crate::messages::{Coordinates, TextMessage};
 
 /// Rappresenta un client WebSocket attualmente connesso al server.
 #[derive(Clone)]
 pub struct ConnectedClient {
-    tx: mpsc::UnboundedSender<TextMessage>,
+    tx: mpsc::Sender<TextMessage>,
     positions: Vec<Coordinates>,
 }
 
 impl ConnectedClient {
-    pub fn new(tx: mpsc::UnboundedSender<TextMessage>) -> Self {
+    pub fn new(tx: mpsc::Sender<TextMessage>) -> Self {
         ConnectedClient {
             tx,
             positions: vec![],
@@ -34,33 +34,33 @@ impl ClientsList {
 
     /// Registra un nuovo client nella lista.
     /// Restituisce il numero di utenti connessi dopo l'aggiunta.
-    pub async fn add(&self, user_id: u32, new_client: ConnectedClient) -> usize {
-        let mut guard = self.list.write().await;
+    pub fn add(&self, user_id: u32, new_client: ConnectedClient) -> usize {
+        let mut guard = self.list.write().unwrap();
         guard.insert(user_id, new_client);
         guard.len()
     }
 
     /// Rimuove un client dalla lista.
     /// Restituisce il numero di utenti connessi dopo la rimozione.
-    pub async fn remove(&self, user_id: u32) -> usize {
-        let mut guard = self.list.write().await;
+    pub fn remove(&self, user_id: u32) -> usize {
+        let mut guard = self.list.write().unwrap();
         guard.remove(&user_id);
         guard.len()
     }
 
     /// Restituisce il numero di client attualmente online.
-    pub async fn len(&self) -> usize {
-        self.list.read().await.len()
+    pub fn len(&self) -> usize {
+        self.list.read().unwrap().len()
     }
 
     /// Restituisce true se un utente è connesso, false altrimenti.
-    pub async fn is_connected(&self, user_id: u32) -> bool {
-        self.list.read().await.contains_key(&user_id)
+    pub fn is_connected(&self, user_id: u32) -> bool {
+        self.list.read().unwrap().contains_key(&user_id)
     }
 
     /// Invia un messaggio a un SINGOLO CLIENT, specificando l'user_id.
-    pub async fn send_one(&self, target_user_id: u32, msg: &str) -> bool {
-        let guard = self.list.read().await;
+    pub fn send_one(&self, target_user_id: u32, msg: &str) -> bool {
+        let guard = self.list.read().unwrap();
 
         let Some(client) = guard.get(&target_user_id) else {
             eprintln!("user_id {target_user_id} non trovato, messaggio non inviato.");
@@ -77,8 +77,8 @@ impl ClientsList {
     }
 
     /// Registra una nuova posizione per un dato utente
-    pub async fn record_position(&self, user_id: u32, pos: Coordinates) {
-        let mut guard = self.list.write().await;
+    pub fn record_position(&self, user_id: u32, pos: Coordinates) {
+        let mut guard = self.list.write().unwrap();
         if let Some(client) = guard.get_mut(&user_id) {
             client.positions.push(pos);
         }
@@ -86,8 +86,8 @@ impl ClientsList {
 
     /// Restituisce la velocità media di un utente lungo un percorso
     /// oppure `None` se non ci sono dati a sufficienza per calcolare la velocità.
-    pub async fn get_avg_speed(&self, user_id: u32) -> Option<f64> {
-        let guard = self.list.read().await;
+    pub fn get_avg_speed(&self, user_id: u32) -> Option<f64> {
+        let guard = self.list.read().unwrap();
         let client = guard.get(&user_id)?;
 
         if client.positions.len() < 2 {
@@ -115,8 +115,8 @@ impl ClientsList {
     }
 
     /// Restituisce tutte le posizioni inviate da un utente a partire dall'apertura del WebSocket.
-    pub async fn get_positions(&self, user_id: u32) -> Option<Vec<Coordinates>> {
-        let guard = self.list.read().await;
+    pub fn get_positions(&self, user_id: u32) -> Option<Vec<Coordinates>> {
+        let guard = self.list.read().unwrap();
         if let Some(client) = guard.get(&user_id) {
             return Some(client.positions.clone());
         }
@@ -125,8 +125,8 @@ impl ClientsList {
     }
 
     /// Restituisce true se l'utente è in movimento, false altrimenti.
-    pub async fn is_moving(&self, user_id: u32) -> bool {
-        let positions_result = self.get_positions(user_id).await;
+    pub fn is_moving(&self, user_id: u32) -> bool {
+        let positions_result = self.get_positions(user_id);
         if positions_result.is_none() {
             return false;
         }
