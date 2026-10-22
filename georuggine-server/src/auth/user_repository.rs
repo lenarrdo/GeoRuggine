@@ -14,14 +14,16 @@ impl UserRepository {
         db_pool: &SqlitePool,
         username: &str,
         password_hash: &str,
-    ) -> Result<(), sqlx::Error> {
-        sqlx::query("INSERT INTO users (username, password_hash) VALUES (?, ?);")
-            .bind(username)
-            .bind(password_hash)
-            .execute(db_pool)
-            .await?;
+    ) -> Result<u32, sqlx::Error> {
+        let user_id: u32 = sqlx::query_scalar(
+            "INSERT INTO users (username, password_hash) VALUES (?, ?) RETURNING id",
+        )
+        .bind(username)
+        .bind(password_hash)
+        .fetch_one(db_pool)
+        .await?;
 
-        Ok(())
+        Ok(user_id)
     }
 
     pub async fn find_by_username(

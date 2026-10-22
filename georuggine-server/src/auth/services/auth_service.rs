@@ -1,4 +1,7 @@
-use crate::auth::{services::token_service, user_repository::UserRepository};
+use crate::{
+    auth::{services::token_service, user_repository::UserRepository},
+    tui::user_list::User,
+};
 use argon2::{Argon2, PasswordHasher, password_hash::PasswordVerifier};
 use password_hash::phc::PasswordHash;
 use sqlx::SqlitePool;
@@ -25,7 +28,7 @@ impl AuthService {
         db_pool: &SqlitePool,
         username: &str,
         password: &str,
-    ) -> Result<(), RegisterError> {
+    ) -> Result<User, RegisterError> {
         let username = username.trim();
         let password = password.trim();
 
@@ -47,7 +50,7 @@ impl AuthService {
                 }
                 other => RegisterError::DatabaseError(other.to_string()),
             })
-            .map(|_| ())
+            .map(|user_id| User::new(user_id, username))
     }
 
     pub async fn login(

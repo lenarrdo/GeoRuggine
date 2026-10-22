@@ -165,6 +165,10 @@ impl UserList {
         }
     }
 
+    pub fn add_user(&mut self, user: User) {
+        self.users.push(user);
+    }
+
     /// sets every user as unselected.
     /// returns a vector containing the ids of the previously selected users.
     pub fn clear_selected_users(&mut self) -> Vec<u32> {

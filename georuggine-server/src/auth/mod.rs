@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     auth::services::auth_service::{AuthService, LoginError, RegisterError},
     shared::app_state::AppState,
+    tui::AppEvent,
 };
 
 #[derive(Debug, Clone, Deserialize)]
@@ -31,13 +32,16 @@ pub async fn handle_registration(
     let password = body.password.as_deref().unwrap_or("");
 
     match AuthService::register(&state.db, username, password).await {
-        Ok(_) => Ok((
-            StatusCode::CREATED,
-            Json(AuthResponse {
-                message: "success".to_string(),
-                token: None,
-            }),
-        )),
+        Ok(user) => {
+            state.tx.send(AppEvent::UserRegistered(user)).await.unwrap();
+            Ok((
+                StatusCode::CREATED,
+                Json(AuthResponse {
+                    message: "success".to_string(),
+                    token: None,
+                }),
+            ))
+        }
         Err(RegisterError::EmptyCredentials) => Err((
             StatusCode::BAD_REQUEST,
             Json(AuthResponse {

@@ -49,6 +49,7 @@ impl TimeFrame {
 pub enum AppEvent {
     ClientConnected(u32),
     ClientDisconnected(u32),
+    UserRegistered(User),
     UserMoving(u32),
     UserStopped(u32),
     LogMessage(String),
@@ -126,6 +127,7 @@ impl App {
                 }
                 Some(app_event) = self.rx.recv() => {
                     match app_event {
+                        AppEvent::UserRegistered(user) => self.user_list.add_user(user),
                         AppEvent::ClientConnected(user_id) => self.user_list.set_status(user_id, UserStatus::Still),
                         AppEvent::ClientDisconnected(user_id) => self.user_list.set_status(user_id, UserStatus::Disconnected),
                         AppEvent::UserMoving(user_id) => self.user_list.set_status(user_id, UserStatus::Moving),
