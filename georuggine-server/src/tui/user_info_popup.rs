@@ -7,7 +7,11 @@ use ratatui::{
     widgets::{Block, Clear, Paragraph, Tabs},
 };
 
-use crate::tui::{TimeFrame, user_list::User};
+use crate::{
+    messages::{Coordinates, message_service},
+    shared::utils,
+    tui::{TimeFrame, user_list::User},
+};
 
 pub enum Tab {
     Daily,
@@ -67,7 +71,7 @@ impl UserInfoPopup {
 
     fn render_content(&self, frame: &mut Frame, area: Rect) {
         let info = format!(
-            "ID: {}\nUsername: {}\nStatus: {}\nAverage Speed: {:.2} km/h\nTime Moving: {}\nTime Not Moving: {}\n",
+            "ID: {}\nUsername: {}\nStatus: {}\n---\nAverage Speed: {:.2} km/h\nTime Moving: {}\nTime Not Moving: {}\n",
             self.user.id,
             self.user.username,
             self.user.status,
@@ -93,5 +97,13 @@ impl UserInfoPopup {
         };
 
         (self.user.id, TimeFrame::from_index(self.selected_tab))
+    }
+
+    pub fn update_movement_stats(&mut self, positions: &Vec<Coordinates>) {
+        let (time_moving, time_not_moving) = message_service::get_movement_stats(&positions);
+        self.time_moving = utils::format_chrono_duration(time_moving);
+        self.time_not_moving = utils::format_chrono_duration(time_not_moving);
+
+        self.avg_speed = message_service::get_average_speed(&positions).unwrap_or_default();
     }
 }

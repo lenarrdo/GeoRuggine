@@ -16,8 +16,8 @@ use tokio::sync::mpsc::Receiver;
 
 use crate::{
     auth::user_repository::UserEntity,
-    messages::{message_repository::MessageRepository, message_service},
-    shared::{app_state::AppState, utils},
+    messages::message_repository::MessageRepository,
+    shared::app_state::AppState,
     tui::{
         message_popup::MessagePopup,
         user_info_popup::UserInfoPopup,
@@ -151,7 +151,13 @@ impl App {
                 return;
             };
 
-            return self.update_movement_stats(user_id, time_frame).await;
+            let Ok(positions) = MessageRepository::new(self.state.db.clone())
+                .get_positions(user_id, time_frame)
+                .await
+            else {
+                return;
+            };
+            return self.user_info_popup.update_movement_stats(&positions);
         }
 
         match key.code {
@@ -164,12 +170,12 @@ impl App {
             KeyCode::Char('a') => self.user_list.select_all_toggle(),
             KeyCode::Char('i') => {
                 if let Some(user) = self.user_list.get_hovered_user() {
-                    self.update_movement_stats(user.id, TimeFrame::Today).await;
-                    self.user_info_popup.avg_speed = self
-                        .state
-                        .clients
-                        .get_avg_speed(user.id)
+                    let positions = MessageRepository::new(self.state.db.clone())
+                        .get_positions(user.id, TimeFrame::Today)
+                        .await
                         .unwrap_or_default();
+                    self.user_info_popup.update_movement_stats(&positions);
+
                     self.user_info_popup.user = user;
 
                     self.user_info_popup.visible = true
@@ -211,14 +217,5 @@ impl App {
 
         self.message_popup
             .render(rounded_block("New Message"), frame);
-    }
-
-    async fn update_movement_stats(&mut self, user_id: u32, time_frame: TimeFrame) {
-        let msg_repo = MessageRepository::new(self.state.db.clone());
-        if let Ok(positions) = msg_repo.get_positions(user_id, time_frame).await {
-            let (time_moving, time_not_moving) = message_service::get_movement_stats(&positions);
-            self.user_info_popup.time_moving = utils::format_chrono_duration(time_moving);
-            self.user_info_popup.time_not_moving = utils::format_chrono_duration(time_not_moving);
-        }
     }
 }
