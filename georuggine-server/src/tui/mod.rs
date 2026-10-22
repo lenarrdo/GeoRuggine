@@ -47,9 +47,9 @@ impl TimeFrame {
 }
 
 pub enum AppEvent {
-    ClientConnected(u32),
-    ClientDisconnected(u32),
     UserRegistered(User),
+    UserConnected(u32),
+    UserDisconnected(u32),
     UserMoving(u32),
     UserStopped(u32),
     LogMessage(String),
@@ -85,12 +85,6 @@ impl App {
         App {
             exit: false,
             user_list: UserList::new(users),
-            // user_list: UserList::default(),
-            // user_list: UserList::new(vec![
-            //     User::new(1, "User 1"),
-            //     User::new(2, "User 2"),
-            //     User::new(3, "User 3"),
-            // ]),
             message_popup: MessagePopup::default(),
             user_info_popup: UserInfoPopup::default(),
             logs_tab: LogsTab::default(),
@@ -128,12 +122,12 @@ impl App {
                 Some(app_event) = self.rx.recv() => {
                     match app_event {
                         AppEvent::UserRegistered(user) => self.user_list.add_user(user),
-                        AppEvent::ClientConnected(user_id) => self.user_list.set_status(user_id, UserStatus::Still),
-                        AppEvent::ClientDisconnected(user_id) => self.user_list.set_status(user_id, UserStatus::Disconnected),
+                        AppEvent::UserConnected(user_id) => self.user_list.set_status(user_id, UserStatus::Still),
+                        AppEvent::UserDisconnected(user_id) => self.user_list.set_status(user_id, UserStatus::Disconnected),
                         AppEvent::UserMoving(user_id) => self.user_list.set_status(user_id, UserStatus::Moving),
                         AppEvent::UserStopped(user_id) => self.user_list.set_status(user_id, UserStatus::Still),
-                        AppEvent::Tick => self.user_list.scan_inactive(),
                         AppEvent::LogMessage(msg) => self.logs_tab.add_message(msg),
+                        AppEvent::Tick => self.user_list.scan_inactive(),
                     }
                 }
             }

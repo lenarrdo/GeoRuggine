@@ -1,8 +1,8 @@
-use chrono::Duration;
 use std::collections::HashMap;
 use std::sync::{RwLock, mpsc};
 
 use crate::messages::{Coordinates, TextMessage};
+use crate::shared::utils::INACTIVE_THRESHOLD;
 
 /// Rappresenta un client WebSocket attualmente connesso al server.
 #[derive(Clone)]
@@ -115,7 +115,7 @@ impl ClientsList {
     }
 
     /// Restituisce tutte le posizioni inviate da un utente a partire dall'apertura del WebSocket.
-    pub fn get_positions(&self, user_id: u32) -> Option<Vec<Coordinates>> {
+    fn get_positions(&self, user_id: u32) -> Option<Vec<Coordinates>> {
         let guard = self.list.read().unwrap();
         if let Some(client) = guard.get(&user_id) {
             return Some(client.positions.clone());
@@ -126,12 +126,10 @@ impl ClientsList {
 
     /// Restituisce true se l'utente è in movimento, false altrimenti.
     pub fn is_moving(&self, user_id: u32) -> bool {
-        let positions_result = self.get_positions(user_id);
-        if positions_result.is_none() {
+        let Some(positions) = self.get_positions(user_id) else {
             return false;
-        }
+        };
 
-        let positions = positions_result.unwrap();
         // first position received, the user is moving.
         if positions.is_empty() {
             return true;
@@ -145,7 +143,6 @@ impl ClientsList {
             .last()
             .unwrap();
 
-        const INACTIVE_THRESHOLD: Duration = Duration::seconds(3);
         if last_position
             .received_at()
             .signed_duration_since(first_same_as_last.received_at())

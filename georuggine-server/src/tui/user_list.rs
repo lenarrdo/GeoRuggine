@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use chrono::{DateTime, Duration, Local};
+use chrono::{DateTime, Local};
 use ratatui::{
     Frame,
     layout::Rect,
@@ -8,6 +8,8 @@ use ratatui::{
     text::Line,
     widgets::{Block, List, ListItem, ListState},
 };
+
+use crate::shared::utils::INACTIVE_THRESHOLD;
 
 #[derive(Clone, PartialEq)]
 pub enum UserStatus {
@@ -195,7 +197,6 @@ impl UserList {
     }
 
     pub fn scan_inactive(&mut self) {
-        const INACTIVE_THRESHOLD: Duration = Duration::seconds(3);
         for user in &mut self.users {
             if user.status == UserStatus::Disconnected {
                 continue;

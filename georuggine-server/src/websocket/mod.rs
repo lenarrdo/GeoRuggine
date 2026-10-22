@@ -16,11 +16,11 @@ use std::{
     sync::{Arc, mpsc},
 };
 
-use crate::auth::services::token_service;
 use crate::messages::{ClientIncomingMessage, TextMessage, message_repository::MessageRepository};
 use crate::shared::app_state::AppState;
 use crate::tui::AppEvent;
 use crate::websocket::clients::ConnectedClient;
+use crate::{auth::services::token_service, shared::utils};
 
 #[derive(Deserialize)]
 pub struct WsParams {
@@ -66,16 +66,14 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, state: Arc<AppState>
     let (tx, rx) = mpsc::channel::<TextMessage>();
 
     state.clients.add(user_id, ConnectedClient::new(tx));
-    state
-        .tx
-        .send(AppEvent::ClientConnected(user_id))
-        .await
-        .unwrap();
-    state
-        .tx
-        .send(AppEvent::LogMessage(format!("User #{user_id} connected.")))
-        .await
-        .unwrap();
+    utils::send_app_events(
+        vec![
+            AppEvent::UserConnected(user_id),
+            AppEvent::LogMessage(format!("User #{user_id} connected.")),
+        ],
+        &state.tx,
+    )
+    .await;
 
     let mut send_task = tokio::spawn(async move {
         while let Ok(msg) = rx.recv() {
@@ -88,18 +86,12 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, state: Arc<AppState>
 
     let state_clone = Arc::clone(&state);
     let mut recv_task = tokio::spawn(async move {
-        let mut nof_processed_messages = 0;
-
         while let Some(Ok(msg)) = ws_receiver.next().await {
             let result = process_message(msg, user_id, Arc::clone(&state_clone)).await;
             if result.is_break() {
                 break;
             }
-
-            nof_processed_messages += 1;
         }
-
-        nof_processed_messages
     });
 
     tokio::select! {
@@ -119,18 +111,14 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, state: Arc<AppState>
     }
 
     state.clients.remove(user_id);
-    state
-        .tx
-        .send(AppEvent::ClientDisconnected(user_id))
-        .await
-        .unwrap();
-    state
-        .tx
-        .send(AppEvent::LogMessage(format!(
-            "User #{user_id} disconnected."
-        )))
-        .await
-        .unwrap();
+    utils::send_app_events(
+        vec![
+            AppEvent::UserDisconnected(user_id),
+            AppEvent::LogMessage(format!("User #{user_id} disconnected.")),
+        ],
+        &state.tx,
+    )
+    .await;
 }
 
 /// Elabora i singoli messaggi ricevuti dal client via WebSocket.
@@ -144,14 +132,9 @@ pub async fn process_message(
         Message::Text(t) => match serde_json::from_str::<ClientIncomingMessage>(&t) {
             Ok(ClientIncomingMessage::Position(pos)) => {
                 let _err = message_repo.save_position(user_id, &pos).await;
-                state
-                    .tx
-                    .send(AppEvent::LogMessage(format!(
-                        "Received coordinates {} from User {user_id}.",
-                        pos
-                    )))
-                    .await
-                    .unwrap();
+
+                let msg = format!("Received coordinates {} from User {user_id}.", pos);
+                state.tx.send(AppEvent::LogMessage(msg)).await.unwrap();
 
                 state.clients.record_position(user_id, pos);
                 let event = if let true = state.clients.is_moving(user_id) {
@@ -159,41 +142,31 @@ pub async fn process_message(
                 } else {
                     AppEvent::UserStopped(user_id)
                 };
-
                 state.tx.send(event).await.unwrap();
             }
-            Ok(ClientIncomingMessage::Text(msg)) => {
-                state
-                    .tx
-                    .send(AppEvent::LogMessage(format!(
-                        "New message from User #{user_id}: {}",
-                        msg.contents
-                    )))
-                    .await
-                    .unwrap();
+            Ok(ClientIncomingMessage::Text(text_msg)) => {
+                let log_msg = format!("New message from User #{user_id}: {}", text_msg.contents);
+                state.tx.send(AppEvent::LogMessage(log_msg)).await.unwrap();
 
                 let _err = message_repo
-                    .save_text_message(user_id, None, &msg, &msg.timestamp)
+                    .save_text_message(user_id, None, &text_msg, &text_msg.timestamp)
                     .await;
             }
             Err(_) => {
-                state
-                    .tx
-                    .send(AppEvent::LogMessage(format!(
-                        "Received unstructured message from User {user_id}: \"{t}\""
-                    )))
-                    .await
-                    .unwrap();
+                let msg = format!("Received unstructured message from User {user_id}: \"{t}\"");
+                state.tx.send(AppEvent::LogMessage(msg)).await.unwrap();
             }
         },
         Message::Close(c) => {
-            if let Some(_cf) = c {
-                // println!(
-                //     ">>> {user_id} ha inviato chiusura socket code={} reason=`{}`",
-                //     cf.code, cf.reason
-                // );
+            if let Some(cf) = c {
+                let msg = format!(
+                    "User #{user_id} requested to close the socket ({}).",
+                    cf.reason
+                );
+                state.tx.send(AppEvent::LogMessage(msg)).await.unwrap();
             } else {
-                // println!(">>> {user_id} ha chiuso la connessione");
+                let msg = format!("{user_id} closed the connection.");
+                state.tx.send(AppEvent::LogMessage(msg)).await.unwrap();
             }
             return ControlFlow::Break(());
         }

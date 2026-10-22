@@ -1,8 +1,6 @@
 use chrono::Duration;
 
-use crate::messages::Coordinates;
-
-const INACTIVE_THRESHOLD: Duration = Duration::minutes(3);
+use crate::{messages::Coordinates, shared::utils::INACTIVE_THRESHOLD};
 
 /// Restituisce una coppia in cui:
 /// 0. Quantità di tempo passata in movimento.
