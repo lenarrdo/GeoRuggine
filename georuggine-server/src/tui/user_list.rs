@@ -112,33 +112,26 @@ impl UserList {
     }
 
     pub fn select_next(&mut self) {
-        if self.users.is_empty() {
+        let Some(curr_idx) = self.state.selected() else {
             return;
-        }
-
-        let curr_idx = self.state.selected().unwrap();
-        let next_idx = if curr_idx == self.users.len() - 1 {
-            Some(0)
-        } else {
-            Some(curr_idx + 1)
         };
+        let next_idx = (curr_idx + 1) % self.users.len();
 
-        self.state.select(next_idx);
+        self.state.select(Some(next_idx));
     }
 
     pub fn select_prev(&mut self) {
-        if self.users.is_empty() {
+        let Some(curr_idx) = self.state.selected() else {
             return;
-        }
-
-        let curr_idx = self.state.selected().unwrap();
-        let next_idx = if curr_idx == 0 {
-            Some(self.users.len() - 1)
-        } else {
-            Some(curr_idx - 1)
         };
 
-        self.state.select(next_idx);
+        let next_idx = if curr_idx == 0 {
+            self.users.len()
+        } else {
+            curr_idx - 1
+        };
+
+        self.state.select(Some(next_idx));
     }
 
     pub fn select_first(&mut self) {
@@ -169,6 +162,9 @@ impl UserList {
 
     pub fn add_user(&mut self, user: User) {
         self.users.push(user);
+        if self.state.selected().is_none() {
+            self.state.select_first();
+        }
     }
 
     /// sets every user as unselected.

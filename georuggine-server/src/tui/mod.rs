@@ -171,17 +171,18 @@ impl App {
             KeyCode::Char(' ') => self.user_list.toggle_selected(),
             KeyCode::Char('a') => self.user_list.select_all_toggle(),
             KeyCode::Char('i') => {
-                if let Some(user) = self.user_list.get_hovered_user() {
-                    let positions = MessageRepository::new(self.state.db.clone())
-                        .get_positions(user.id, TimeFrame::Today)
-                        .await
-                        .unwrap_or_default();
-                    self.user_info_popup.update_movement_stats(&positions);
+                let Some(user) = self.user_list.get_hovered_user() else {
+                    return;
+                };
 
-                    self.user_info_popup.user = user;
+                let positions = MessageRepository::new(self.state.db.clone())
+                    .get_positions(user.id, TimeFrame::Today)
+                    .await
+                    .unwrap_or_default();
+                self.user_info_popup.update_movement_stats(&positions);
+                self.user_info_popup.user = user;
 
-                    self.user_info_popup.visible = true
-                }
+                self.user_info_popup.visible = true
             }
             KeyCode::Char('n') => self.message_popup.show(),
             _ => {}
