@@ -101,6 +101,15 @@ export async function onChatMessageReceived(
     });
   } else {
     // In ambiente browser, nessun listener nativo
-    return () => {};
+    return () => { };
+  }
+}
+export async function apiSendPosition(content: string): Promise<void> {
+  if (isInTauri()) {
+    await invoke("upload_coordinates", {
+      content,
+    });
+  } else {
+    console.log("[Mock Tauri] Invio posizione:", content);
   }
 }

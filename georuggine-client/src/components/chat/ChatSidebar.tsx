@@ -1,10 +1,17 @@
 import React from "react";
 import { MapPin, MessageSquare } from "lucide-react";
+import { FileUploader } from "../upload/FileUploader";
+import { apiSendPosition } from "../../services/tauriBridge";
 
 interface ChatSidebarProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
 }
+
+async function FileUpload(content: string) {
+  await apiSendPosition(content);
+}
+
 
 export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   activeTab,
@@ -30,9 +37,8 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
         <li className="nav-item">
           <button
             type="button"
-            className={`nav-link w-100 text-start d-flex align-items-center gap-2 font-monospace ${
-              activeTab === "chat" ? "active" : "text-secondary"
-            } sidebar-nav-item`}
+            className={`nav-link w-100 text-start d-flex align-items-center gap-2 font-monospace ${activeTab === "chat" ? "active" : "text-secondary"
+              } sidebar-nav-item`}
             onClick={() => onTabChange("chat")}
           >
             <MessageSquare size={18} className="sidebar-nav-icon" />
@@ -40,6 +46,13 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
           </button>
         </li>
       </ul>
+
+
+      <div className="mt-auto pt-3 border-top border-secondary">
+        <FileUploader
+          onFileUploaded={FileUpload}
+        />
+      </div>
     </aside>
   );
 };

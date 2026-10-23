@@ -1,6 +1,5 @@
 use crate::auth::auth_service::AuthService;
 use crate::auth::models::{AuthResult, UserSession};
-use crate::messages::position::start_background_tracking;
 use crate::state::AppState;
 use crate::websocket::connect_ws_internal;
 
@@ -58,11 +57,6 @@ impl AuthController {
             // 2. Connette la WebSocket al server usando il token
             if let Err(e) = connect_ws_internal(app_handle, state, token).await {
                 eprintln!("[AuthController] Login completato, ma errore apertura WebSocket: {e}");
-            } else {
-                // 3. Avvia Task 3 (Tracking periodico da file ogni 30s)
-                if let Err(e) = start_background_tracking(state).await {
-                    eprintln!("[AuthController] Errore avvio background tracking: {e}");
-                }
             }
 
             // 4. Risultato esposto a React (nessun token trapelato)

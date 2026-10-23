@@ -34,6 +34,8 @@ pub fn run() {
             auth::get_current_user,
             // Produttore 1 (UI): invio messaggi di chat
             messages::send_chat_message,
+            // Produttore 2: caricamento file coordinate
+            messages::upload_coordinates,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
