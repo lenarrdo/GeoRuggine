@@ -36,15 +36,19 @@ impl MessageRepository {
     pub async fn save_position(
         &self,
         user_id: u32,
+        journey_id: &str,
         position: &Coordinates,
     ) -> Result<(), sqlx::Error> {
-        sqlx::query("INSERT INTO positions (user_id, lat, lon, timestamp) VALUES (?, ?, ?, ?);")
-            .bind(user_id)
-            .bind(position.lat)
-            .bind(position.lon)
-            .bind(position.received_at().to_rfc3339())
-            .execute(&self.db_pool)
-            .await?;
+        sqlx::query(
+            "INSERT INTO positions (user_id, journey_id, lat, lon, timestamp) VALUES (?, ?, ?, ?, ?);",
+        )
+        .bind(user_id)
+        .bind(journey_id)
+        .bind(position.lat)
+        .bind(position.lon)
+        .bind(position.received_at().to_rfc3339())
+        .execute(&self.db_pool)
+        .await?;
 
         Ok(())
     }

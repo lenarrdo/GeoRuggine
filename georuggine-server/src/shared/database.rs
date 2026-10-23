@@ -47,6 +47,7 @@ pub async fn init(reset_tables: bool) -> Result<Pool<Sqlite>, Box<dyn std::error
         "CREATE TABLE IF NOT EXISTS positions (
             id INTEGER PRIMARY KEY,
             user_id INTEGER NOT NULL,
+            journey_id INTEGER NOT NULL,
             lat REAL NOT NULL,
             lon REAL NOT NULL,
             timestamp DATETIME NOT NULL,

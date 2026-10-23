@@ -9,6 +9,7 @@ use crate::shared::utils::INACTIVE_THRESHOLD;
 pub struct ConnectedClient {
     tx: mpsc::Sender<TextMessage>,
     positions: Vec<Coordinates>,
+    journey_id: Option<String>,
 }
 
 impl ConnectedClient {
@@ -16,6 +17,7 @@ impl ConnectedClient {
         ConnectedClient {
             tx,
             positions: vec![],
+            journey_id: None,
         }
     }
 }
@@ -152,5 +154,18 @@ impl ClientsList {
         }
 
         true
+    }
+
+    pub fn get_journey_id(&self, user_id: u32) -> Option<String> {
+        self.list.read().unwrap().get(&user_id)?.journey_id.clone()
+    }
+
+    pub fn set_journey_id(&self, user_id: u32, journey_id: &str) {
+        let mut guard = self.list.write().unwrap();
+        if let Some(user) = guard.get_mut(&user_id)
+            && user.journey_id.is_none()
+        {
+            user.journey_id = Some(journey_id.to_string());
+        }
     }
 }

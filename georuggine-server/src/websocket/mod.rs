@@ -9,6 +9,7 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
+use chrono::Utc;
 use futures_util::{sink::SinkExt, stream::StreamExt};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -131,7 +132,15 @@ pub async fn process_message(
     match msg {
         Message::Text(t) => match serde_json::from_str::<ClientIncomingMessage>(&t) {
             Ok(ClientIncomingMessage::Position(pos)) => {
-                let _err = message_repo.save_position(user_id, &pos).await;
+                let mut journey_id = state.clients.get_journey_id(user_id);
+                if journey_id.is_none() {
+                    let new_id = format!("{user_id}-{:?}", Utc::now().timestamp());
+                    state.clients.set_journey_id(user_id, &new_id);
+                    journey_id = Some(new_id);
+                }
+                let _err = message_repo
+                    .save_position(user_id, &journey_id.unwrap(), &pos)
+                    .await;
 
                 let msg = format!("Received coordinates {} from User {user_id}.", pos);
                 state.tx.send(AppEvent::LogMessage(msg)).await.unwrap();
