@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Container } from "react-bootstrap";
 import { AuthLayout } from "./components/auth/AuthLayout";
 import { LoginForm } from "./components/auth/LoginForm";
@@ -36,6 +36,7 @@ export function App() {
 
   // Inizializza la cronologia messaggi vuota
   const [messages, setMessages] = useState<UiMessage[]>([]);
+  const mockTimeoutRef = useRef<number | null>(null);
 
   // Controlla se c'è già una sessione attiva all'avvio
   useEffect(() => {
@@ -48,8 +49,23 @@ export function App() {
     checkExistingSession();
   }, []);
 
-  // Registrazione dei listener di eventi Tauri
+  // Cleanup eventuale timeout simulazione su unmount
   useEffect(() => {
+    return () => {
+      if (mockTimeoutRef.current) {
+        clearTimeout(mockTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Registrazione dei listener di eventi Tauri: attivo solo per l'utente loggato
+  // Alla disconnessione o cambio utente, stacca il listener e resetta i messaggi
+  useEffect(() => {
+    if (!currentUser) {
+      setMessages([]);
+      return;
+    }
+
     let isCancelled = false;
     let unlisten: (() => void) | undefined;
 
@@ -103,7 +119,7 @@ export function App() {
         unlisten();
       }
     };
-  }, []);
+  }, [currentUser]);
 
   // Gestione Login
   const handleLogin = async (data: LoginFormData) => {
@@ -113,6 +129,7 @@ export function App() {
     try {
       const res = await apiLogin(data.email, data.password);
       if (res.success) {
+        setMessages([]); // Reset preventivo di eventuali messaggi residui
         setCurrentUser({ username: data.email });
       } else {
         setAuthError(res.message);
@@ -159,15 +176,23 @@ export function App() {
     }
   };
 
-  // Gestione Logout
+  // Gestione Logout: reset completo dello stato utente, cronologia chat ed errori
   const handleLogout = async () => {
     try {
       await apiLogout();
     } catch (err) {
       console.warn("Errore logout:", err);
     } finally {
+      if (mockTimeoutRef.current) {
+        clearTimeout(mockTimeoutRef.current);
+        mockTimeoutRef.current = null;
+      }
+      setMessages([]);
       setCurrentUser(null);
       setAuthView("login");
+      setAuthError(null);
+      setAuthSuccess(null);
+      setActiveTab("chat");
     }
   };
 
@@ -192,7 +217,7 @@ export function App() {
 
     // Se non siamo in Tauri (simulazione browser per anteprima UI), generiamo una risposta mock
     if (!isInTauri()) {
-      setTimeout(() => {
+      mockTimeoutRef.current = window.setTimeout(() => {
         setMessages((prev) => [
           ...prev,
           {
@@ -203,6 +228,7 @@ export function App() {
             time: formatCurrentTime(),
           },
         ]);
+        mockTimeoutRef.current = null;
       }, 1200);
     }
   };

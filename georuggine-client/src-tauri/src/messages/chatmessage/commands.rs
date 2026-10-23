@@ -13,5 +13,5 @@ pub fn send_chat_message(
     if trimmed.is_empty() {
         return Err("Il messaggio non può essere vuoto.".to_string());
     }
-    ChatMessageController::send_chat_message(&state, trimmed.to_string(), receiver_id)
+    ChatMessageController::send_chat_message(&state, trimmed.to_string())
 }
