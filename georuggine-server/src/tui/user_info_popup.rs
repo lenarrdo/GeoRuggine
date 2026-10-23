@@ -99,7 +99,7 @@ impl UserInfoPopup {
         (self.user.id, TimeFrame::from_index(self.selected_tab))
     }
 
-    pub fn update_movement_stats(&mut self, positions: &Vec<Coordinates>) {
+    pub fn update_movement_stats(&mut self, positions: &Vec<Vec<Coordinates>>) {
         let (time_moving, time_not_moving) = message_service::get_movement_stats(&positions);
         self.time_moving = utils::format_chrono_duration(time_moving);
         self.time_not_moving = utils::format_chrono_duration(time_not_moving);

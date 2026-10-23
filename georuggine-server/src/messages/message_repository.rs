@@ -1,9 +1,19 @@
+use chrono::{DateTime, Utc};
 use sqlx::{QueryBuilder, SqlitePool};
+use std::collections::HashMap;
 
 use crate::{
     messages::{Coordinates, TextMessage},
     tui::TimeFrame,
 };
+
+#[derive(sqlx::FromRow)]
+struct PositionRow {
+    journey_id: String,
+    lat: f64,
+    lon: f64,
+    timestamp: DateTime<Utc>,
+}
 
 #[derive(Clone)]
 pub struct MessageRepository {
@@ -57,9 +67,10 @@ impl MessageRepository {
         &self,
         user_id: u32,
         time_frame: TimeFrame,
-    ) -> Result<Vec<Coordinates>, sqlx::Error> {
-        let mut query_builder =
-            QueryBuilder::new("SELECT lat, lon, timestamp FROM positions WHERE user_id = ");
+    ) -> Result<Vec<Vec<Coordinates>>, sqlx::Error> {
+        let mut query_builder = QueryBuilder::new(
+            "SELECT lat, lon, journey_id, timestamp FROM positions WHERE user_id = ",
+        );
         query_builder.push_bind(user_id);
 
         let time_query = match time_frame {
@@ -69,10 +80,22 @@ impl MessageRepository {
         };
         query_builder.push(time_query);
 
-        let positions = query_builder
-            .build_query_as::<Coordinates>()
+        let rows = query_builder
+            .build_query_as::<PositionRow>()
             .fetch_all(&self.db_pool)
             .await?;
+
+        let mut map: HashMap<String, Vec<Coordinates>> = HashMap::new();
+
+        for row in rows {
+            map.entry(row.journey_id).or_default().push(Coordinates {
+                lat: row.lat,
+                lon: row.lon,
+                timestamp: row.timestamp,
+            });
+        }
+
+        let positions: Vec<Vec<Coordinates>> = map.into_values().collect();
 
         Ok(positions)
     }

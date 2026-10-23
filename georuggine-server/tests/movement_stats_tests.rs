@@ -3,7 +3,7 @@ use georuggine_server::messages::{Coordinates, message_service};
 
 #[tokio::test]
 async fn no_positions() {
-    let positions: Vec<Coordinates> = vec![];
+    let positions: Vec<Vec<Coordinates>> = vec![];
     let (t_moving, t_not_moving) = message_service::get_movement_stats(&positions);
 
     assert_eq!(t_moving, Duration::zero());
@@ -12,7 +12,7 @@ async fn no_positions() {
 
 #[tokio::test]
 async fn one_position() {
-    let positions: Vec<Coordinates> = vec![Coordinates::new(10.0, 10.0, Utc::now())];
+    let positions: Vec<Vec<Coordinates>> = vec![vec![Coordinates::new(10.0, 10.0, Utc::now())]];
     let (t_moving, t_not_moving) = message_service::get_movement_stats(&positions);
 
     // one position is not enough data to compute time spent moving
@@ -25,10 +25,10 @@ async fn user_moving_two_positions() {
     // Usiamo direttamente una stringa in formato RFC 3339
     let dt = "2015-06-03T12:34:56Z".parse::<DateTime<Utc>>().unwrap();
 
-    let positions: Vec<Coordinates> = vec![
+    let positions: Vec<Vec<Coordinates>> = vec![vec![
         Coordinates::new(10.0, 10.0, dt),
         Coordinates::new(10.2, 10.0, dt + Duration::seconds(30)),
-    ];
+    ]];
     let (t_moving, t_not_moving) = message_service::get_movement_stats(&positions);
 
     assert_eq!(
@@ -42,13 +42,13 @@ async fn user_moving_two_positions() {
 async fn user_moving_many_positions() {
     let dt = "2015-06-03T12:34:56Z".parse::<DateTime<Utc>>().unwrap();
 
-    let positions: Vec<Coordinates> = vec![
+    let positions: Vec<Vec<Coordinates>> = vec![vec![
         Coordinates::new(10.0, 10.0, dt),
         Coordinates::new(10.2, 10.0, dt + Duration::seconds(30)),
         Coordinates::new(10.2, 10.0, dt + Duration::seconds(60)),
         Coordinates::new(10.2, 10.0, dt + Duration::seconds(90)),
         Coordinates::new(10.5, 10.0, dt + Duration::seconds(120)),
-    ];
+    ]];
     let (t_moving, t_not_moving) = message_service::get_movement_stats(&positions);
 
     assert_eq!(
@@ -62,17 +62,18 @@ async fn user_moving_many_positions() {
 async fn pause_is_detected() {
     let dt = "2015-06-03T12:34:56Z".parse::<DateTime<Utc>>().unwrap();
 
-    let mut positions: Vec<Coordinates> = vec![];
+    let mut journey: Vec<Coordinates> = vec![];
     for i in 0..=5 {
-        positions.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(30 * i)));
+        journey.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(30 * i)));
     }
 
     // once the 6th position is received, the system sets the user's status as "not moving".
-    positions.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(30 * 6)));
+    journey.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(30 * 6)));
 
     // the 7th position will be counted as a break.
-    positions.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(30 * 7)));
+    journey.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(30 * 7)));
 
+    let positions = vec![journey];
     let (t_moving, t_not_moving) = message_service::get_movement_stats(&positions);
 
     assert_eq!(
@@ -89,31 +90,32 @@ async fn pause_is_detected() {
 async fn movement_and_pause() {
     let dt = "2015-06-03T12:34:56Z".parse::<DateTime<Utc>>().unwrap();
 
-    let mut positions: Vec<Coordinates> = vec![];
+    let mut journey: Vec<Coordinates> = vec![];
 
     // user moves for 60s...
-    positions.push(Coordinates::new(10.0, 10.0, dt));
-    positions.push(Coordinates::new(10.1, 10.0, dt + Duration::seconds(30)));
-    positions.push(Coordinates::new(10.1, 10.1, dt + Duration::seconds(60)));
+    journey.push(Coordinates::new(10.0, 10.0, dt));
+    journey.push(Coordinates::new(10.1, 10.0, dt + Duration::seconds(30)));
+    journey.push(Coordinates::new(10.1, 10.1, dt + Duration::seconds(60)));
 
     // then they stand still (150s counted as movement)
     for i in 3..8 {
-        positions.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(30 * i)));
+        journey.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(30 * i)));
     }
 
     // now 180s have passed since the first (10.0, 10.0), the user is marked as not moving
-    positions.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(30 * 8)));
+    journey.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(30 * 8)));
 
     // this is counted as a break
-    positions.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(30 * 9)));
+    journey.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(30 * 9)));
 
     // finally they start moving again (t_moving += 30)
-    positions.push(Coordinates::new(
+    journey.push(Coordinates::new(
         10.0,
         12.0,
         dt + Duration::seconds(30 * 10),
     ));
 
+    let positions = vec![journey];
     let (t_moving, t_not_moving) = message_service::get_movement_stats(&positions);
 
     assert_eq!(
