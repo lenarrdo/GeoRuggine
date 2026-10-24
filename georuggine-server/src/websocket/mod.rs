@@ -156,10 +156,6 @@ pub async fn process_message(
             Ok(ClientIncomingMessage::Text(text_msg)) => {
                 let log_msg = format!("New message from User #{user_id}: {}", text_msg.contents);
                 state.tx.send(AppEvent::LogMessage(log_msg)).await.unwrap();
-
-                let _err = message_repo
-                    .save_text_message(user_id, None, &text_msg, &text_msg.timestamp)
-                    .await;
             }
             Err(_) => {
                 let msg = format!("Received unstructured message from User {user_id}: \"{t}\"");

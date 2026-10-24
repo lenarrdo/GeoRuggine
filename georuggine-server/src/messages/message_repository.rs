@@ -2,10 +2,7 @@ use chrono::{DateTime, Utc};
 use sqlx::{QueryBuilder, SqlitePool};
 use std::collections::HashMap;
 
-use crate::{
-    messages::{Coordinates, TextMessage},
-    tui::TimeFrame,
-};
+use crate::{messages::Coordinates, tui::TimeFrame};
 
 #[derive(sqlx::FromRow)]
 struct PositionRow {
@@ -23,24 +20,6 @@ pub struct MessageRepository {
 impl MessageRepository {
     pub fn new(db_pool: SqlitePool) -> Self {
         MessageRepository { db_pool }
-    }
-
-    pub async fn save_text_message(
-        &self,
-        sender_id: u32,
-        receiver_id: Option<u32>,
-        msg: &TextMessage,
-        timestamp: &str,
-    ) -> Result<(), sqlx::Error> {
-        sqlx::query("INSERT INTO messages (sender_id, receiver_id, timestamp, contents) VALUES (?, ?, ?, ?);")
-            .bind(sender_id)
-            .bind(receiver_id)
-            .bind(timestamp)
-            .bind(&msg.contents)
-            .execute(&self.db_pool)
-            .await?;
-
-        Ok(())
     }
 
     pub async fn save_position(
