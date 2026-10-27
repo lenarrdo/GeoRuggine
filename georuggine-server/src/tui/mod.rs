@@ -1,3 +1,4 @@
+pub mod chat_box;
 pub mod logs_tab;
 pub mod message_popup;
 pub mod user_info_popup;
@@ -20,6 +21,7 @@ use crate::{
     messages::message_repository::MessageRepository,
     shared::app_state::AppState,
     tui::{
+        chat_box::ChatBox,
         logs_tab::LogsTab,
         message_popup::MessagePopup,
         user_info_popup::UserInfoPopup,
@@ -65,6 +67,7 @@ pub struct App {
     message_popup: MessagePopup,
     user_info_popup: UserInfoPopup,
     logs_tab: LogsTab,
+    chat_box: ChatBox,
 
     // domain info
     rx: Receiver<AppEvent>,
@@ -88,6 +91,7 @@ impl App {
             message_popup: MessagePopup::default(),
             user_info_popup: UserInfoPopup::default(),
             logs_tab: LogsTab::default(),
+            chat_box: ChatBox::sample(),
             rx,
             state,
         }
@@ -208,12 +212,13 @@ impl App {
         };
         self.user_list
             .render(rounded_block("Users"), frame, user_bar);
-        frame.render_widget(rounded_block("Chat"), chat);
         frame.render_widget(rounded_block("CPU Usage"), stats);
         frame.render_widget(
             Paragraph::new("Use ↓↑ to move, g/G to go top/bottom, q to quit."),
             footer,
         );
+
+        self.chat_box.render(rounded_block("Chat"), frame, chat);
 
         self.logs_tab.render(rounded_block("Logs"), frame, logs);
 
