@@ -6,7 +6,7 @@ pub mod user_list;
 
 use std::{sync::Arc, time::Duration};
 
-use crossterm::event::{Event as CrosstermEvent, EventStream, KeyCode, KeyEvent};
+use crossterm::event::{Event as CrosstermEvent, EventStream, KeyCode, KeyEvent, KeyModifiers};
 use futures::StreamExt;
 use ratatui::{
     DefaultTerminal, Frame,
@@ -166,30 +166,38 @@ impl App {
             return self.user_info_popup.update_movement_stats(&positions);
         }
 
-        match key.code {
-            KeyCode::Char('q') => self.exit = true,
-            KeyCode::Char('k') | KeyCode::Up => self.user_list.select_prev(),
-            KeyCode::Char('j') | KeyCode::Down => self.user_list.select_next(),
-            KeyCode::Char('g') | KeyCode::Home => self.user_list.select_first(),
-            KeyCode::Char('G') | KeyCode::End => self.user_list.select_last(),
-            KeyCode::Char(' ') => self.user_list.toggle_selected(),
-            KeyCode::Char('a') => self.user_list.select_all_toggle(),
-            KeyCode::Char('i') => {
-                let Some(user) = self.user_list.get_hovered_user() else {
-                    return;
-                };
+        if key.modifiers == KeyModifiers::SHIFT && key.code == KeyCode::Up {
+            self.chat_box.scroll_up();
+        } else if key.modifiers == KeyModifiers::SHIFT && key.code == KeyCode::Down {
+            self.chat_box.scroll_down();
+        } else {
+            match key.code {
+                KeyCode::Char('q') => self.exit = true,
+                KeyCode::Char('k') | KeyCode::Up => self.user_list.select_prev(),
+                KeyCode::Char('K') => self.chat_box.scroll_up(),
+                KeyCode::Char('j') | KeyCode::Down => self.user_list.select_next(),
+                KeyCode::Char('J') => self.chat_box.scroll_down(),
+                KeyCode::Char('g') | KeyCode::Home => self.user_list.select_first(),
+                KeyCode::Char('G') | KeyCode::End => self.user_list.select_last(),
+                KeyCode::Char(' ') => self.user_list.toggle_selected(),
+                KeyCode::Char('a') => self.user_list.select_all_toggle(),
+                KeyCode::Char('i') => {
+                    let Some(user) = self.user_list.get_hovered_user() else {
+                        return;
+                    };
 
-                let positions = MessageRepository::new(self.state.db.clone())
-                    .get_positions(user.id, TimeFrame::Today)
-                    .await
-                    .unwrap_or_default();
-                self.user_info_popup.update_movement_stats(&positions);
-                self.user_info_popup.user = user;
+                    let positions = MessageRepository::new(self.state.db.clone())
+                        .get_positions(user.id, TimeFrame::Today)
+                        .await
+                        .unwrap_or_default();
+                    self.user_info_popup.update_movement_stats(&positions);
+                    self.user_info_popup.user = user;
 
-                self.user_info_popup.visible = true
+                    self.user_info_popup.visible = true
+                }
+                KeyCode::Char('n') => self.message_popup.show(),
+                _ => {}
             }
-            KeyCode::Char('n') => self.message_popup.show(),
-            _ => {}
         }
     }
 

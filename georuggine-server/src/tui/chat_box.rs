@@ -1,10 +1,10 @@
 use chrono::{DateTime, Utc};
 use ratatui::{
     Frame,
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Constraint, Direction, Layout, Margin, Rect},
     style::{Color, Style},
     text::Line,
-    widgets::{Block, Borders, Paragraph},
+    widgets::{Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
 };
 use std::fmt::Display;
 
@@ -37,50 +37,64 @@ impl UIMessage {
 #[derive(Default)]
 pub struct ChatBox {
     messages: Vec<UIMessage>,
+    scroll_offset: usize,
 }
 
 impl ChatBox {
     pub fn sample() -> Self {
+        let mut msgs = vec![];
+        for i in 0..15 {
+            let id = i % 2;
+            let mut contents = "Hi from ".to_string();
+            contents.push_str(if id == 0 { "server" } else { "user" });
+            msgs.push(UIMessage::new(
+                id,
+                TextMessage {
+                    contents: contents,
+                    timestamp: Utc::now().to_string(),
+                },
+            ));
+        }
         ChatBox {
-            messages: vec![
-                UIMessage::new(
-                    0,
-                    TextMessage {
-                        contents: "Hi from server.".to_string(),
-                        timestamp: Utc::now().to_string(),
-                    },
-                ),
-                UIMessage::new(
-                    1,
-                    TextMessage {
-                        contents: "Hi from client. This is a longer messageeeeeeeeeeeeeeeeeee."
-                            .to_string(),
-                        timestamp: Utc::now().to_string(),
-                    },
-                ),
-                UIMessage::new(
-                    0,
-                    TextMessage {
-                        contents: "Yeeeeeeeeeeeeeeeeeeeeeeeeeeeeeah (from server.)".to_string(),
-                        timestamp: Utc::now().to_string(),
-                    },
-                ),
-            ],
+            messages: msgs,
+            scroll_offset: 0usize,
         }
     }
 
     pub fn render(&mut self, block: Block, frame: &mut Frame, area: Rect) {
+        let inner_area = block.inner(area);
+        frame.render_widget(block, area);
+
+        if self.messages.is_empty() || inner_area.height == 0 {
+            return;
+        }
+
+        const BUBBLE_HEIGHT: u16 = 3;
+        let max_visible = (inner_area.height / BUBBLE_HEIGHT) as usize;
+        let total_messages = self.messages.len();
+
+        if self.scroll_offset > total_messages.saturating_sub(max_visible) {
+            self.scroll_offset = total_messages.saturating_sub(max_visible);
+        }
+
+        let visible_messages: Vec<&UIMessage> = self
+            .messages
+            .iter()
+            .skip(self.scroll_offset)
+            .take(max_visible)
+            .collect();
+
         let message_chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints(
-                self.messages
+                visible_messages
                     .iter()
-                    .map(|_| Constraint::Length(3))
+                    .map(|_| Constraint::Length(BUBBLE_HEIGHT))
                     .collect::<Vec<Constraint>>(),
             )
-            .split(block.inner(area));
+            .split(inner_area);
 
-        for (i, msg) in self.messages.iter().enumerate() {
+        for (i, msg) in visible_messages.iter().enumerate() {
             if i >= message_chunks.len() {
                 break;
             }
@@ -118,9 +132,34 @@ impl ChatBox {
 
             let paragraph = Paragraph::new(text).block(bubble_block);
 
-            let position = if msg.sender == 0 { 0 } else { 1 }; // 0 -> left; 1 -> right
+            let position = if msg.sender == 0 { 0 } else { 1 };
             frame.render_widget(paragraph, horizontal_layout[position]);
-            frame.render_widget(&block, area);
+        }
+
+        let mut scrollbar_state = ScrollbarState::default()
+            .content_length(total_messages / BUBBLE_HEIGHT as usize)
+            .position(self.scroll_offset)
+            .viewport_content_length(max_visible);
+
+        let scrollbar = Scrollbar::default().orientation(ScrollbarOrientation::VerticalRight);
+
+        frame.render_stateful_widget(
+            scrollbar,
+            area.inner(Margin {
+                vertical: 1,
+                horizontal: 0,
+            }),
+            &mut scrollbar_state,
+        );
+    }
+
+    pub fn scroll_up(&mut self) {
+        self.scroll_offset = self.scroll_offset.saturating_sub(1);
+    }
+
+    pub fn scroll_down(&mut self) {
+        if self.scroll_offset + 1 < self.messages.len() {
+            self.scroll_offset += 1;
         }
     }
 }
