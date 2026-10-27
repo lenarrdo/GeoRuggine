@@ -10,11 +10,11 @@ use std::fmt::Display;
 
 use crate::messages::TextMessage;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct UIMessage {
     timestamp: DateTime<Utc>,
     contents: String,
-    sender: u32,
+    pub sender: u32,
 }
 
 impl Display for UIMessage {
@@ -24,7 +24,7 @@ impl Display for UIMessage {
 }
 
 impl UIMessage {
-    fn new(sender: u32, msg: TextMessage) -> Self {
+    pub fn new(sender: u32, msg: TextMessage) -> Self {
         let date_time = msg.timestamp.parse().unwrap_or(Utc::now());
         UIMessage {
             sender,
@@ -36,7 +36,7 @@ impl UIMessage {
 
 #[derive(Default)]
 pub struct ChatBox {
-    messages: Vec<UIMessage>,
+    pub messages: Vec<UIMessage>,
     scroll_offset: usize,
 }
 

@@ -17,11 +17,14 @@ use std::{
     sync::{Arc, mpsc},
 };
 
-use crate::messages::{ClientIncomingMessage, TextMessage, message_repository::MessageRepository};
 use crate::shared::app_state::AppState;
 use crate::tui::AppEvent;
 use crate::websocket::clients::ConnectedClient;
 use crate::{auth::services::token_service, shared::utils};
+use crate::{
+    messages::{ClientIncomingMessage, TextMessage, message_repository::MessageRepository},
+    tui::chat_box::UIMessage,
+};
 
 #[derive(Deserialize)]
 pub struct WsParams {
@@ -155,7 +158,17 @@ pub async fn process_message(
             }
             Ok(ClientIncomingMessage::Text(text_msg)) => {
                 let log_msg = format!("New message from User #{user_id}: {}", text_msg.contents);
-                state.tx.send(AppEvent::LogMessage(log_msg)).await.unwrap();
+
+                utils::send_app_events(
+                    vec![
+                        AppEvent::LogMessage(log_msg),
+                        AppEvent::NewMessage(UIMessage::new(user_id, text_msg.clone())),
+                    ],
+                    &state.tx,
+                )
+                .await;
+
+                state.clients.save_client_message(user_id, text_msg);
             }
             Err(_) => {
                 let msg = format!("Received unstructured message from User {user_id}: \"{t}\"");

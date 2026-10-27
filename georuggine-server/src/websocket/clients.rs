@@ -3,21 +3,24 @@ use std::sync::{RwLock, mpsc};
 
 use crate::messages::{Coordinates, TextMessage};
 use crate::shared::utils::INACTIVE_THRESHOLD;
+use crate::tui::chat_box::UIMessage;
 
 /// Rappresenta un client WebSocket attualmente connesso al server.
 #[derive(Clone)]
 pub struct ConnectedClient {
     tx: mpsc::Sender<TextMessage>,
-    positions: Vec<Coordinates>,
     journey_id: Option<String>,
+    positions: Vec<Coordinates>,
+    messages: Vec<UIMessage>,
 }
 
 impl ConnectedClient {
     pub fn new(tx: mpsc::Sender<TextMessage>) -> Self {
         ConnectedClient {
             tx,
-            positions: vec![],
             journey_id: None,
+            positions: vec![],
+            messages: vec![],
         }
     }
 }
@@ -61,21 +64,23 @@ impl ClientsList {
     }
 
     /// Invia un messaggio a un SINGOLO CLIENT, specificando l'user_id.
-    pub fn send_one(&self, target_user_id: u32, msg: &str) -> bool {
-        let guard = self.list.read().unwrap();
+    pub fn send_one(&self, user_id: u32, msg: &str) -> Result<(), String> {
+        let mut guard = self.list.write().unwrap();
 
-        let Some(client) = guard.get(&target_user_id) else {
-            eprintln!("user_id {target_user_id} non trovato, messaggio non inviato.");
-            return false;
+        let Some(client) = guard.get_mut(&user_id) else {
+            return Err(format!(
+                "user_id {user_id} non trovato, messaggio non inviato."
+            ));
         };
 
         let text_message = TextMessage::new(msg.to_string());
-        if let Err(e) = client.tx.send(text_message) {
-            eprintln!("Errore invio a user_id {target_user_id}: {e}");
-            return false;
+        if let Err(e) = client.tx.send(text_message.clone()) {
+            return Err(format!("Errore invio a user_id {user_id}: {e}"));
         }
 
-        true
+        client.messages.push(UIMessage::new(0, text_message));
+
+        Ok(())
     }
 
     /// Registra una nuova posizione per un dato utente
@@ -167,5 +172,23 @@ impl ClientsList {
         {
             user.journey_id = Some(journey_id.to_string());
         }
+    }
+
+    pub fn save_client_message(&self, user_id: u32, text_message: TextMessage) {
+        let mut guard = self.list.write().unwrap();
+        let Some(client) = guard.get_mut(&user_id) else {
+            return;
+        };
+
+        client.messages.push(UIMessage::new(user_id, text_message));
+    }
+
+    pub fn get_messages(&self, user_id: u32) -> Option<Vec<UIMessage>> {
+        let guard = self.list.read().unwrap();
+        let Some(client) = guard.get(&user_id) else {
+            return None;
+        };
+
+        Some(client.messages.clone())
     }
 }

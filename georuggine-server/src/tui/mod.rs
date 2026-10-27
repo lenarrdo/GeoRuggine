@@ -18,10 +18,10 @@ use tokio::sync::mpsc::Receiver;
 
 use crate::{
     auth::user_repository::UserEntity,
-    messages::message_repository::MessageRepository,
+    messages::{TextMessage, message_repository::MessageRepository},
     shared::app_state::AppState,
     tui::{
-        chat_box::ChatBox,
+        chat_box::{ChatBox, UIMessage},
         logs_tab::LogsTab,
         message_popup::MessagePopup,
         user_info_popup::UserInfoPopup,
@@ -55,6 +55,7 @@ pub enum AppEvent {
     UserMoving(u32),
     UserStopped(u32),
     LogMessage(String),
+    NewMessage(UIMessage),
     Tick,
 }
 
@@ -91,7 +92,7 @@ impl App {
             message_popup: MessagePopup::default(),
             user_info_popup: UserInfoPopup::default(),
             logs_tab: LogsTab::default(),
-            chat_box: ChatBox::sample(),
+            chat_box: ChatBox::default(),
             rx,
             state,
         }
@@ -132,6 +133,11 @@ impl App {
                         AppEvent::UserStopped(user_id) => self.user_list.set_status(user_id, UserStatus::Still),
                         AppEvent::LogMessage(msg) => self.logs_tab.add_message(msg),
                         AppEvent::Tick => self.user_list.scan_inactive(),
+                        AppEvent::NewMessage(msg) => {
+                            if let Some(selected_user) = self.user_list.get_hovered_user() && (selected_user.id == msg.sender || msg.sender == 0) {
+                                self.chat_box.messages.push(msg);
+                            }
+                        },
                     }
                 }
             }
@@ -142,14 +148,32 @@ impl App {
 
     async fn handle_key(&mut self, key: KeyEvent) {
         if self.message_popup.visible {
-            let msg = self.message_popup.handle_key(key);
-            if msg.is_some() {
-                let msg = msg.unwrap();
-                let previously_selected = self.user_list.clear_selected_users();
-                for user_id in previously_selected {
-                    self.state.clients.send_one(user_id, &msg);
+            let Some(msg) = self.message_popup.handle_key(key) else {
+                return;
+            };
+
+            let previously_selected = self.user_list.clear_selected_users();
+            for user_id in previously_selected {
+                if let Err(e) = self.state.clients.send_one(user_id, &msg) {
+                    self.state
+                        .tx
+                        .send(AppEvent::LogMessage(format!(
+                            "Couldn't send message to {user_id}: {e}"
+                        )))
+                        .await
+                        .unwrap();
+                } else {
+                    self.state
+                        .tx
+                        .send(AppEvent::NewMessage(UIMessage::new(
+                            0,
+                            TextMessage::new(msg.clone()),
+                        )))
+                        .await
+                        .unwrap();
                 }
             }
+
             return;
         } else if self.user_info_popup.visible {
             let (user_id, time_frame_opt) = self.user_info_popup.handle_key(key);
@@ -173,9 +197,21 @@ impl App {
         } else {
             match key.code {
                 KeyCode::Char('q') => self.exit = true,
-                KeyCode::Char('k') | KeyCode::Up => self.user_list.select_prev(),
+                KeyCode::Char('k') | KeyCode::Up => {
+                    self.user_list.select_prev();
+                    if let Some(user) = self.user_list.get_hovered_user() {
+                        self.chat_box.messages =
+                            self.state.clients.get_messages(user.id).unwrap_or_default();
+                    }
+                }
                 KeyCode::Char('K') => self.chat_box.scroll_up(),
-                KeyCode::Char('j') | KeyCode::Down => self.user_list.select_next(),
+                KeyCode::Char('j') | KeyCode::Down => {
+                    self.user_list.select_next();
+                    if let Some(user) = self.user_list.get_hovered_user() {
+                        self.chat_box.messages =
+                            self.state.clients.get_messages(user.id).unwrap_or_default();
+                    }
+                }
                 KeyCode::Char('J') => self.chat_box.scroll_down(),
                 KeyCode::Char('g') | KeyCode::Home => self.user_list.select_first(),
                 KeyCode::Char('G') | KeyCode::End => self.user_list.select_last(),

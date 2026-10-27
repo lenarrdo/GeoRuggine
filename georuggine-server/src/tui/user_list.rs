@@ -125,13 +125,13 @@ impl UserList {
             return;
         };
 
-        let next_idx = if curr_idx == 0 {
-            self.users.len()
+        let prev_idx = if curr_idx == 0 {
+            self.users.len() - 1
         } else {
             curr_idx - 1
         };
 
-        self.state.select(Some(next_idx));
+        self.state.select(Some(prev_idx));
     }
 
     pub fn select_first(&mut self) {
@@ -156,7 +156,7 @@ impl UserList {
     pub fn toggle_selected(&mut self) {
         if let Some(i) = self.state.selected() {
             self.users[i].selected = !self.users[i].selected;
-            self.select_next();
+            // self.select_next();
         }
     }
 
