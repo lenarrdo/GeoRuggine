@@ -17,6 +17,9 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({ message }) => 
           </div>
           <p className="mb-1 text-break bubble-text">{message.text}</p>
           <div className="d-flex align-items-center justify-content-end bubble-meta">
+            {message.failed && (
+              <span className="small text-danger me-2">Non inviato</span>
+            )}
             <span className="bubble-time">{message.time}</span>
           </div>
         </div>

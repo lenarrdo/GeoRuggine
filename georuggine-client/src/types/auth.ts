@@ -8,14 +8,12 @@ export interface AuthResult {
 }
 
 export interface RegisterFormData {
-  nome: string;
-  cognome: string;
-  email: string;
+  username: string;
   password: string;
   confermaPassword: string;
 }
 
 export interface LoginFormData {
-  email: string;
+  username: string;
   password: string;
 }

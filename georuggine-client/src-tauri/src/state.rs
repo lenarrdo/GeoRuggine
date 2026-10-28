@@ -38,6 +38,14 @@ impl AppState {
         Ok(guard.clone())
     }
 
+    /// Verifica se la connessione WebSocket è attualmente attiva
+    pub fn is_ws_connected(&self) -> bool {
+        self.ws_tx
+            .lock()
+            .map(|guard| guard.is_some())
+            .unwrap_or(false)
+    }
+
     /// Inserisce un messaggio nel canale MPSC condiviso
     pub fn send_ws_message(&self, msg: ClientIncomingMessage) -> Result<(), String> {
         let guard = self.ws_tx.lock().map_err(|e| e.to_string())?;

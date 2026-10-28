@@ -1,30 +1,29 @@
-import { invoke, isTauri } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { AuthResult, UserSession } from "../types/auth";
 import { ChatMessage } from "../types/chat";
 
-// Verifica se stiamo eseguendo dentro il runtime Tauri
-export const isInTauri = (): boolean => {
-  try {
-    return isTauri();
-  } catch {
-    return false;
+/** Normalizza l'errore restituito da Tauri (stringa o Error) in un messaggio leggibile */
+function toErrorMessage(err: unknown, fallback: string): string {
+  if (typeof err === "string" && err.trim().length > 0) {
+    return err;
   }
-};
+  if (err instanceof Error && err.message.trim().length > 0) {
+    return err.message;
+  }
+  return fallback;
+}
 
 /**
  * Autenticazione: Registrazione nuovo account
  */
 export async function apiRegister(username: string, password: string): Promise<AuthResult> {
-  if (isInTauri()) {
+  try {
     return await invoke<AuthResult>("register", { username, password });
-  } else {
-    // Modalità mock per sviluppo frontend in browser
-    console.log("[Mock Tauri] Invocata registrazione per:", username);
-    await new Promise((resolve) => setTimeout(resolve, 600));
+  } catch (err) {
     return {
-      success: true,
-      message: "Registrazione completata con successo!",
+      success: false,
+      message: toErrorMessage(err, "Errore durante la registrazione."),
     };
   }
 }
@@ -33,15 +32,12 @@ export async function apiRegister(username: string, password: string): Promise<A
  * Autenticazione: Login
  */
 export async function apiLogin(username: string, password: string): Promise<AuthResult> {
-  if (isInTauri()) {
+  try {
     return await invoke<AuthResult>("login", { username, password });
-  } else {
-    // Modalità mock per sviluppo frontend in browser
-    console.log("[Mock Tauri] Invocato login per:", username);
-    await new Promise((resolve) => setTimeout(resolve, 600));
+  } catch (err) {
     return {
-      success: true,
-      message: "Login effettuato con successo",
+      success: false,
+      message: toErrorMessage(err, "Errore durante il login."),
     };
   }
 }
@@ -50,10 +46,10 @@ export async function apiLogin(username: string, password: string): Promise<Auth
  * Autenticazione: Logout
  */
 export async function apiLogout(): Promise<void> {
-  if (isInTauri()) {
+  try {
     await invoke("logout");
-  } else {
-    console.log("[Mock Tauri] Logout effettuato");
+  } catch (err) {
+    throw new Error(toErrorMessage(err, "Errore durante il logout."));
   }
 }
 
@@ -61,15 +57,10 @@ export async function apiLogout(): Promise<void> {
  * Autenticazione: Recupero utente corrente salvato in sessione
  */
 export async function apiGetCurrentUser(): Promise<UserSession | null> {
-  if (isInTauri()) {
-    try {
-      const username = await invoke<string | null>("get_current_user");
-      return username ? { username } : null;
-    } catch (err) {
-      console.warn("Errore get_current_user:", err);
-      return null;
-    }
-  } else {
+  try {
+    const username = await invoke<string | null>("get_current_user");
+    return username ? { username } : null;
+  } catch {
     return null;
   }
 }
@@ -77,15 +68,11 @@ export async function apiGetCurrentUser(): Promise<UserSession | null> {
 /**
  * Chat: Invio messaggio di testo al server o destinatario
  */
-export async function apiSendChatMessage(
-  contents: string,
-): Promise<void> {
-  if (isInTauri()) {
-    await invoke("send_chat_message", {
-      contents,
-    });
-  } else {
-    console.log("[Mock Tauri] Invio messaggio:", contents);
+export async function apiSendChatMessage(contents: string): Promise<void> {
+  try {
+    await invoke("send_chat_message", { contents });
+  } catch (err) {
+    throw new Error(toErrorMessage(err, "Impossibile inviare il messaggio."));
   }
 }
 
@@ -95,21 +82,39 @@ export async function apiSendChatMessage(
 export async function onChatMessageReceived(
   callback: (msg: ChatMessage) => void,
 ): Promise<UnlistenFn> {
-  if (isInTauri()) {
+  try {
     return await listen<ChatMessage>("chat-message-received", (event) => {
       callback(event.payload);
     });
-  } else {
-    // In ambiente browser, nessun listener nativo
-    return () => { };
+  } catch (err) {
+    throw new Error(
+      toErrorMessage(err, "Impossibile ascoltare i messaggi dal server."),
+    );
   }
 }
-export async function apiSendPosition(content: string): Promise<void> {
-  if (isInTauri()) {
-    await invoke("upload_coordinates", {
-      content,
+
+/**
+ * Eventi WebSocket: ascolto della chiusura imprevista della connessione al server
+ */
+export async function onWsDisconnected(callback: () => void): Promise<UnlistenFn> {
+  try {
+    return await listen("ws-disconnected", () => {
+      callback();
     });
-  } else {
-    console.log("[Mock Tauri] Invio posizione:", content);
+  } catch (err) {
+    throw new Error(
+      toErrorMessage(err, "Impossibile ascoltare lo stato del server."),
+    );
+  }
+}
+
+/**
+ * Posizione: invio delle coordinate al server
+ */
+export async function apiSendPosition(content: string): Promise<void> {
+  try {
+    await invoke("upload_coordinates", { content });
+  } catch (err) {
+    throw new Error(toErrorMessage(err, "Impossibile inviare la posizione."));
   }
 }

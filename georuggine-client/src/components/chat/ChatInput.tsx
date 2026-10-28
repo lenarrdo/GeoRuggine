@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { ArrowRight } from "lucide-react";
 
 interface ChatInputProps {
   onSendMessage: (text: string) => Promise<void>;
@@ -20,6 +21,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       setIsSending(true);
       setText("");
       await onSendMessage(trimmed);
+    } catch {
+      // Invio fallito: il testo torna nella barra per un nuovo tentativo
+      setText(trimmed);
     } finally {
       setIsSending(false);
     }
@@ -64,7 +68,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           title="Invia messaggio"
           disabled={disabled || isSending || !text.trim()}
         >
-          <i className="bi bi-arrow-right fs-5"></i>
+          <ArrowRight size={18} />
         </button>
       </form>
     </div>

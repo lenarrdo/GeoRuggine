@@ -48,7 +48,12 @@ export function FileUploader({ onFileUploaded }: FileUploaderProps) {
 
             setStatusMessage({ type: "success", text: "File caricato con successo!" });
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : "Errore durante il caricamento";
+            const msg =
+                typeof err === "string"
+                    ? err
+                    : err instanceof Error
+                    ? err.message
+                    : "Errore durante il caricamento";
             setStatusMessage({ type: "error", text: msg });
         } finally {
             setIsUploading(false);

@@ -11,7 +11,6 @@ pub fn run() {
     let app_state = AppState::default();
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
         .manage(app_state)
         // ─────────────────────────────────────────────────────────────
         // MAIN THREAD: All'atto della chiusura della finestra del client

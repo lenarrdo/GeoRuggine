@@ -34,6 +34,7 @@ pub async fn connect_ws_internal(
 
     // TASK 1: TRASMISSIONE (Unico consumatore del canale sul web)
     let state_for_send = state.clone();
+    let app_for_send = app_handle.clone();
     let send_handle = tokio::spawn(async move {
         println!("[WS Client] Task 1 (Trasmissione) avviato");
         while let Some(msg) = rx.recv().await {
@@ -51,6 +52,8 @@ pub async fn connect_ws_internal(
         }
         let _ = ws_sink.close().await;
         println!("[WS Client] Task 1 (Trasmissione) concluso");
+        // Chiusura imprevista: avvisa il frontend (non avviene su logout, dove il task viene abortito)
+        let _ = app_for_send.emit("ws-disconnected", ());
         state_for_send.disconnect_ws();
     })
     .abort_handle();
@@ -66,7 +69,7 @@ pub async fn connect_ws_internal(
                     if let Ok(chat) = serde_json::from_str::<TextMessage>(&text) {
                         let _ = app_clone.emit("chat-message-received", chat);
                     } else {
-                        let _ = app_clone.emit("ws-raw-message", text.to_string());
+                        eprintln!("[WS Client] Ricevuto messaggio di testo non conforme a TextMessage: {text}");
                     }
                 }
                 Ok(Message::Close(close_frame)) => {
@@ -82,8 +85,9 @@ pub async fn connect_ws_internal(
             }
         }
 
-        let _ = app_clone.emit("ws-status", false);
         println!("[WS Client] Task 2 (Ricezione) concluso");
+        // Chiusura imprevista: avvisa il frontend (non avviene su logout, dove il task viene abortito)
+        let _ = app_clone.emit("ws-disconnected", ());
         state_for_recv.disconnect_ws();
     })
     .abort_handle();

@@ -42,24 +42,29 @@ impl AuthController {
         };
 
         if let Some(token) = &body.token {
-            // 1. Salva la sessione completa (con token JWT) nello stato protetto Rust
+            // 1. Connette la WebSocket: senza chat il login non va a buon fine
+            if let Err(e) = connect_ws_internal(app_handle, state, token).await {
+                eprintln!("[AuthController] Connessione WebSocket fallita: {e}");
+                return AuthResult {
+                    success: false,
+                    message: "Impossibile connettersi. Riprova più tardi.".to_string(),
+                };
+            }
+
+            // 2. Salva la sessione completa (con token JWT) solo a WebSocket attiva
             let session = UserSession {
                 username: username.clone(),
                 token: token.clone(),
             };
             if let Err(e) = state.save_session(session) {
+                state.disconnect_ws();
                 return AuthResult {
                     success: false,
                     message: format!("Errore nel salvataggio della sessione: {e}"),
                 };
             }
 
-            // 2. Connette la WebSocket al server usando il token
-            if let Err(e) = connect_ws_internal(app_handle, state, token).await {
-                eprintln!("[AuthController] Login completato, ma errore apertura WebSocket: {e}");
-            }
-
-            // 4. Risultato esposto a React (nessun token trapelato)
+            // 3. Risultato esposto a React (nessun token trapelato)
             AuthResult {
                 success: true,
                 message: body.message,

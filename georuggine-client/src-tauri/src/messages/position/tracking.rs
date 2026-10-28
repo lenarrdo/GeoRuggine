@@ -29,7 +29,6 @@ pub async fn start_background_tracking(
             } else {
                 *coordinates.last().unwrap_or(&(45000, 7600))
             };
-            index += 1;
 
             let pos = PositionUpdate {
                 x_coord: x,
@@ -39,16 +38,21 @@ pub async fn start_background_tracking(
 
             // Invia la posizione sul canale condiviso MPSC verso il Task 1
             if let Err(e) = state_clone.send_ws_message(ClientIncomingMessage::Position(pos.clone())) {
-                eprintln!("[Tracking] Errore invio posizione sul canale MPSC: {e}");
-                break;
+                eprintln!(
+                    "[Tracking] Connessione non disponibile ({e}). Nuovo tentativo tra 30s..."
+                );
+                continue;
             }
 
+            index += 1;
+
             println!(
-                "[Tracking] Inviata posizione: x={x}, y={y}, time={:?}",
+                "[Tracking] Inviata posizione ({}/{}): x={x}, y={y}, time={:?}",
+                index.min(coordinates.len()),
+                coordinates.len(),
                 pos.timestamp
             );
         }
-        println!("[Tracking] Task 3 (Tracking periodico) concluso");
     })
     .abort_handle();
 
