@@ -93,29 +93,21 @@ impl ClientsList {
         }
     }
 
-    /// Restituisce tutte le posizioni inviate da un utente a partire dall'apertura del WebSocket.
-    fn get_positions(&self, user_id: u32) -> Option<Vec<Coordinates>> {
-        let guard = self.list.read().unwrap();
-        if let Some(client) = guard.get(&user_id) {
-            return Some(client.positions.clone());
-        }
-
-        None
-    }
-
     /// Restituisce true se l'utente è in movimento, false altrimenti.
     pub fn is_moving(&self, user_id: u32) -> bool {
-        let Some(positions) = self.get_positions(user_id) else {
+        let guard = self.list.read().unwrap();
+        let Some(client) = guard.get(&user_id) else {
             return false;
         };
 
         // first position received, the user is moving.
-        if positions.is_empty() {
+        if client.positions.is_empty() {
             return true;
         }
 
-        let last_position: &Coordinates = positions.last().unwrap();
-        let first_same_as_last = positions
+        let last_position: &Coordinates = client.positions.last().unwrap();
+        let first_same_as_last = client
+            .positions
             .iter()
             .rev()
             .take_while(|&pos| pos == last_position)
