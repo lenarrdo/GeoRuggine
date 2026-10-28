@@ -4,11 +4,9 @@ use chrono::{DateTime, Local, Utc};
 use ratatui::{
     Frame,
     layout::Rect,
-    text::{Line, Span},
+    text::Line,
     widgets::{Block, List, ListItem},
 };
-
-const MAX_MESSAGES: usize = 50;
 
 struct LogMessage {
     contents: String,
@@ -42,26 +40,25 @@ pub struct LogsTab {
 
 impl LogsTab {
     pub fn render(&mut self, block: Block, frame: &mut Frame, area: Rect) {
+        let box_height = block.inner(area).height as usize;
+
+        if self.messages.len() > box_height {
+            self.messages.pop_front();
+        }
+
+        let skip_count = self.messages.len().saturating_sub(box_height);
         let messages: Vec<ListItem> = self
             .messages
             .iter()
-            .map(|m| {
-                let content = Line::from(Span::raw(m.to_string()));
-                ListItem::new(content)
-            })
+            .skip(skip_count)
+            .map(|m| ListItem::new(Line::from(m.to_string())))
             .collect();
+
         let msg_list = List::new(messages).block(block);
         frame.render_widget(msg_list, area);
     }
 
     pub fn add_message(&mut self, msg: String) {
         self.messages.push_back(LogMessage::new(msg));
-        if self.messages.len() >= MAX_MESSAGES {
-            self.messages.pop_front();
-        }
-    }
-
-    pub fn clear(&mut self) {
-        self.messages.clear();
     }
 }
