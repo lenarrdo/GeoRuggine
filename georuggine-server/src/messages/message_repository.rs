@@ -48,7 +48,7 @@ impl MessageRepository {
         time_frame: TimeFrame,
     ) -> Result<Vec<Vec<Coordinates>>, sqlx::Error> {
         let mut query_builder = QueryBuilder::new(
-            "SELECT lat, lon, journey_id, timestamp FROM positions WHERE user_id = ",
+            "SELECT lat, lon, journey_id, timestamp FROM positions WHERE user_id =",
         );
         query_builder.push_bind(user_id);
 
@@ -58,6 +58,8 @@ impl MessageRepository {
             TimeFrame::ThisMonth => "AND strftime('%Y-%m', timestamp) = strftime('%Y-%m', 'now')",
         };
         query_builder.push(time_query);
+
+        query_builder.push("ORDER BY timestamp ASC;");
 
         let rows = query_builder
             .build_query_as::<PositionRow>()
