@@ -112,12 +112,12 @@ impl UserList {
     }
 
     pub fn select_next(&mut self) {
-        let Some(curr_idx) = self.state.selected() else {
-            return;
-        };
-        let next_idx = (curr_idx + 1) % self.users.len();
-
-        self.state.select(Some(next_idx));
+        if let Some(curr_idx) = self.state.selected()
+            && !self.users.is_empty()
+        {
+            let next_idx = (curr_idx + 1) % self.users.len();
+            self.state.select(Some(next_idx));
+        }
     }
 
     pub fn select_prev(&mut self) {
