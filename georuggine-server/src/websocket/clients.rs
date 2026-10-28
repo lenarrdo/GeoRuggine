@@ -1,5 +1,7 @@
 use std::collections::HashMap;
-use std::sync::{RwLock, mpsc};
+use std::sync::RwLock;
+
+use tokio::sync::mpsc;
 
 use crate::messages::{Coordinates, TextMessage};
 use crate::shared::utils::INACTIVE_THRESHOLD;
@@ -64,7 +66,7 @@ impl ClientsList {
     }
 
     /// Invia un messaggio a un SINGOLO CLIENT, specificando l'user_id.
-    pub fn send_one(&self, user_id: u32, msg: &str) -> Result<(), String> {
+    pub async fn send_one(&self, user_id: u32, msg: &str) -> Result<(), String> {
         let mut guard = self.list.write().unwrap();
 
         let Some(client) = guard.get_mut(&user_id) else {
@@ -74,7 +76,7 @@ impl ClientsList {
         };
 
         let text_message = TextMessage::new(msg.to_string());
-        if let Err(e) = client.tx.send(text_message.clone()) {
+        if let Err(e) = client.tx.send(text_message.clone()).await {
             return Err(format!("Errore invio a user_id {user_id}: {e}"));
         }
 
@@ -89,36 +91,6 @@ impl ClientsList {
         if let Some(client) = guard.get_mut(&user_id) {
             client.positions.push(pos);
         }
-    }
-
-    /// Restituisce la velocità media di un utente lungo un percorso
-    /// oppure `None` se non ci sono dati a sufficienza per calcolare la velocità.
-    pub fn get_avg_speed(&self, user_id: u32) -> Option<f64> {
-        let guard = self.list.read().unwrap();
-        let client = guard.get(&user_id)?;
-
-        if client.positions.len() < 2 {
-            return None;
-        }
-
-        let last_pos = client.positions.last().unwrap();
-        let first_pos = client.positions.first().unwrap();
-
-        let total_distance = last_pos.distance_from(first_pos);
-
-        let duration_seconds = last_pos
-            .received_at()
-            .signed_duration_since(first_pos.received_at())
-            .num_milliseconds() as f64
-            / 1000.0;
-
-        if duration_seconds <= 0.0 {
-            return Some(0.0);
-        }
-
-        let total_hours = duration_seconds / 3600.0;
-
-        Some(total_distance / total_hours)
     }
 
     /// Restituisce tutte le posizioni inviate da un utente a partire dall'apertura del WebSocket.

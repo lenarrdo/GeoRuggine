@@ -154,7 +154,7 @@ impl App {
 
             let previously_selected = self.user_list.clear_selected_users();
             for user_id in previously_selected {
-                if let Err(e) = self.state.clients.send_one(user_id, &msg) {
+                if let Err(e) = self.state.clients.send_one(user_id, &msg).await {
                     self.state
                         .tx
                         .send(AppEvent::LogMessage(format!(

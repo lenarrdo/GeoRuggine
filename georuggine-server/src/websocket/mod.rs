@@ -12,10 +12,8 @@ use axum::{
 use chrono::Utc;
 use futures_util::{sink::SinkExt, stream::StreamExt};
 use serde::{Deserialize, Serialize};
-use std::{
-    ops::ControlFlow,
-    sync::{Arc, mpsc},
-};
+use std::{ops::ControlFlow, sync::Arc};
+use tokio::sync::mpsc;
 
 use crate::shared::app_state::AppState;
 use crate::tui::AppEvent;
@@ -67,7 +65,7 @@ pub async fn ws_handler(
 /// Gestisce l'intero ciclo di vita di una singola connessione WebSocket attiva.
 pub async fn handle_socket(socket: WebSocket, user_id: u32, state: Arc<AppState>) {
     let (mut ws_sender, mut ws_receiver) = socket.split();
-    let (tx, rx) = mpsc::channel::<TextMessage>();
+    let (tx, mut rx) = mpsc::channel::<TextMessage>(100);
 
     state.clients.add(user_id, ConnectedClient::new(tx));
     utils::send_app_events(
@@ -80,7 +78,7 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, state: Arc<AppState>
     .await;
 
     let mut send_task = tokio::spawn(async move {
-        while let Ok(msg) = rx.recv() {
+        while let Some(msg) = rx.recv().await {
             let json = serde_json::to_string(&msg).unwrap_or_default();
             if ws_sender.send(Message::Text(json.into())).await.is_err() {
                 break;
