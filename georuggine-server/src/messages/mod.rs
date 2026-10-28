@@ -78,7 +78,7 @@ impl Coordinates {
     }
 }
 
-impl PartialEq for &Coordinates {
+impl PartialEq for Coordinates {
     fn eq(&self, other: &Self) -> bool {
         self.lat == other.lat && self.lon == other.lon
     }
@@ -89,4 +89,3 @@ impl Display for Coordinates {
         write!(f, "({}, {})", self.lat, self.lon)
     }
 }
-
