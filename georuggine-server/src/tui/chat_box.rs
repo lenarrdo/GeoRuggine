@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use chrono::{DateTime, Utc};
 use ratatui::{
     Frame,
@@ -6,7 +8,6 @@ use ratatui::{
     text::Line,
     widgets::{Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
 };
-use std::fmt::Display;
 
 use crate::messages::TextMessage;
 

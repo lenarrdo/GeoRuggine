@@ -15,13 +15,12 @@ use serde::{Deserialize, Serialize};
 use std::{ops::ControlFlow, sync::Arc};
 use tokio::sync::mpsc;
 
-use crate::shared::app_state::AppState;
-use crate::tui::AppEvent;
-use crate::websocket::clients::ConnectedClient;
-use crate::{auth::services::token_service, shared::utils};
 use crate::{
+    auth::services::token_service,
     messages::{ClientIncomingMessage, TextMessage, message_repository::MessageRepository},
-    tui::chat_box::UIMessage,
+    shared::{app_state::AppState, utils},
+    tui::{AppEvent, chat_box::UIMessage},
+    websocket::clients::ConnectedClient,
 };
 
 #[derive(Deserialize)]
@@ -147,7 +146,7 @@ pub async fn process_message(
                 state.tx.send(AppEvent::LogMessage(msg)).await.unwrap();
 
                 state.clients.record_position(user_id, pos);
-                let event = if let true = state.clients.is_moving(user_id) {
+                let event = if state.clients.is_moving(user_id) {
                     AppEvent::UserMoving(user_id)
                 } else {
                     AppEvent::UserStopped(user_id)

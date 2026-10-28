@@ -1,7 +1,6 @@
+use std::{fs::OpenOptions, io::Write, time::Duration};
+
 use chrono::Local;
-use std::fs::OpenOptions;
-use std::io::Write;
-use std::time::Duration;
 use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System};
 
 pub fn start_cpu_logger(interval: Duration, output_path: &str) {

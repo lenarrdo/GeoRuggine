@@ -5,12 +5,11 @@ use axum::{
 use std::{net::SocketAddr, sync::Arc};
 use tokio::sync::mpsc;
 
-use georuggine_server::shared::{app_state::AppState, database as db};
-use georuggine_server::tui::App;
-use georuggine_server::websocket::{clients::ClientsList, ws_handler};
 use georuggine_server::{
     auth::{handle_login, handle_registration, user_repository::UserRepository},
-    tui::AppEvent,
+    shared::{app_state::AppState, database as db},
+    tui::{App, AppEvent},
+    websocket::{clients::ClientsList, ws_handler},
 };
 
 pub const HOST: &str = "127.0.0.1";

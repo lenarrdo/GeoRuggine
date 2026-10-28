@@ -1,9 +1,11 @@
 use dashmap::DashMap;
 use tokio::sync::mpsc::Sender;
 
-use crate::messages::{Coordinates, TextMessage};
-use crate::shared::utils::INACTIVE_THRESHOLD;
-use crate::tui::chat_box::UIMessage;
+use crate::{
+    messages::{Coordinates, TextMessage},
+    shared::utils::INACTIVE_THRESHOLD,
+    tui::chat_box::UIMessage,
+};
 
 #[derive(Clone)]
 pub struct ConnectedClient {
