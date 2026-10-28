@@ -2,7 +2,7 @@ use chrono::Duration;
 
 use crate::{messages::Coordinates, shared::utils::INACTIVE_THRESHOLD};
 
-pub fn get_movement_stats(journeys: &Vec<Vec<Coordinates>>) -> (Duration, Duration) {
+pub fn get_movement_stats(journeys: &[Vec<Coordinates>]) -> (Duration, Duration) {
     let mut acc = (Duration::zero(), Duration::zero());
     for journey in journeys {
         let stats = get_movement_stats_aux(journey);
@@ -16,7 +16,7 @@ pub fn get_movement_stats(journeys: &Vec<Vec<Coordinates>>) -> (Duration, Durati
 /// Dato un Vec<Coordinates> rappresentante le posizioni di una singola journe
 /// 0. Quantità di tempo passata in movimento.
 /// 1. Quantità di tempo passata da fermo (pause).
-fn get_movement_stats_aux(journey: &Vec<Coordinates>) -> (Duration, Duration) {
+fn get_movement_stats_aux(journey: &[Coordinates]) -> (Duration, Duration) {
     if journey.is_empty() {
         return (Duration::zero(), Duration::zero());
     }
@@ -48,7 +48,7 @@ fn get_movement_stats_aux(journey: &Vec<Coordinates>) -> (Duration, Duration) {
 
 /// Restituisce la velocità media di un utente lungo un percorso
 /// oppure `None` se non ci sono dati a sufficienza per calcolare la velocità.
-pub fn get_average_speed(journeys: &Vec<Vec<Coordinates>>) -> Option<f64> {
+pub fn get_average_speed(journeys: &[Vec<Coordinates>]) -> Option<f64> {
     let mut total_distance = 0.0;
     let mut total_hours = 0.0;
     for journey in journeys {
@@ -70,16 +70,13 @@ pub fn get_average_speed(journeys: &Vec<Vec<Coordinates>>) -> Option<f64> {
 /// Data una specifica journey, restituisce una coppia in cui:
 /// 0. Totale distanza percorsa
 /// 1. Totale ore impiegate
-fn get_average_speed_aux(journey: &Vec<Coordinates>) -> Option<(f64, f64)> {
+fn get_average_speed_aux(journey: &[Coordinates]) -> Option<(f64, f64)> {
     if journey.len() < 2 {
         return None;
     }
 
     let last_pos = journey.last().unwrap();
     let first_pos = journey.first().unwrap();
-
-    let total_distance = last_pos.distance_from(first_pos);
-
     let duration_seconds = last_pos
         .received_at()
         .signed_duration_since(first_pos.received_at())
@@ -92,5 +89,9 @@ fn get_average_speed_aux(journey: &Vec<Coordinates>) -> Option<(f64, f64)> {
 
     let total_hours = duration_seconds / 3600.0;
 
-    Some((total_distance, total_hours))
+    Some((compute_total_distance(journey), total_hours))
+}
+
+fn compute_total_distance(journey: &[Coordinates]) -> f64 {
+    journey.windows(2).map(|w| w[0].distance_from(&w[1])).sum()
 }
