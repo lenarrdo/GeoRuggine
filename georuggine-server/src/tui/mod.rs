@@ -245,8 +245,8 @@ impl App {
                 .areas(main_content);
         let [chat, logs_stats] =
             Layout::vertical([Constraint::Percentage(75), Constraint::Fill(1)]).areas(info);
-        let [logs, stats] =
-            Layout::horizontal([Constraint::Percentage(75), Constraint::Fill(1)]).areas(logs_stats);
+        // let [logs, stats] =
+        //     Layout::horizontal([Constraint::Percentage(75), Constraint::Fill(1)]).areas(logs_stats);
 
         let rounded_block = |title| {
             Block::bordered()
@@ -254,17 +254,19 @@ impl App {
                 .border_style(Style::default().fg(TEXT_FG_COLOR))
                 .title(format!(" {title} "))
         };
-        self.user_list
-            .render(rounded_block("Users"), frame, user_bar);
-        frame.render_widget(rounded_block("CPU Usage"), stats);
+        // frame.render_widget(rounded_block("CPU Usage"), stats);
         frame.render_widget(
             Paragraph::new("Use ↓↑ to move, g/G to go top/bottom, q to quit."),
             footer,
         );
 
+        self.user_list
+            .render(rounded_block("Users"), frame, user_bar);
+
         self.chat_box.render(rounded_block("Chat"), frame, chat);
 
-        self.logs_tab.render(rounded_block("Logs"), frame, logs);
+        self.logs_tab
+            .render(rounded_block("Logs"), frame, logs_stats);
 
         self.user_info_popup.render(frame);
 
