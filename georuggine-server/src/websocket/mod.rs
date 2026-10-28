@@ -50,7 +50,7 @@ pub async fn ws_handler(
         )
     })?;
 
-    if state.clients.is_connected(claims.user_id) {
+    if state.clients.list.contains_key(&claims.user_id) {
         return Err((
             StatusCode::FORBIDDEN,
             Json(WsResponse {
@@ -67,7 +67,7 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, state: Arc<AppState>
     let (mut ws_sender, mut ws_receiver) = socket.split();
     let (tx, mut rx) = mpsc::channel::<TextMessage>(100);
 
-    state.clients.add(user_id, ConnectedClient::new(tx));
+    state.clients.list.insert(user_id, ConnectedClient::new(tx));
     utils::send_app_events(
         vec![
             AppEvent::UserConnected(user_id),
@@ -112,7 +112,7 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, state: Arc<AppState>
         }
     }
 
-    state.clients.remove(user_id);
+    state.clients.list.remove(&user_id);
     utils::send_app_events(
         vec![
             AppEvent::UserDisconnected(user_id),
