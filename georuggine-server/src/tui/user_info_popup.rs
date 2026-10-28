@@ -13,23 +13,6 @@ use crate::{
     tui::{TimeFrame, user_list::User},
 };
 
-pub enum Tab {
-    Daily,
-    Weekly,
-    Monthly,
-}
-
-impl Tab {
-    pub fn from_index(index: usize) -> Option<Self> {
-        match index {
-            0 => Some(Tab::Daily),
-            1 => Some(Tab::Weekly),
-            2 => Some(Tab::Monthly),
-            _ => None,
-        }
-    }
-}
-
 #[derive(Default)]
 pub struct UserInfoPopup {
     // popup info
@@ -99,7 +82,7 @@ impl UserInfoPopup {
         (self.user.id, TimeFrame::from_index(self.selected_tab))
     }
 
-    pub fn update_movement_stats(&mut self, positions: &Vec<Vec<Coordinates>>) {
+    pub fn update_movement_stats(&mut self, positions: &[Vec<Coordinates>]) {
         let (time_moving, time_not_moving) = message_service::get_movement_stats(&positions);
         self.time_moving = utils::format_chrono_duration(time_moving);
         self.time_not_moving = utils::format_chrono_duration(time_not_moving);
