@@ -103,36 +103,33 @@ impl ChatBox {
             let text = msg.to_string();
             let text_width = (text.chars().count() as u16 + 4).min(chunk.width);
 
-            let horizontal_layout = if msg.sender == 0 {
-                Layout::default()
-                    .direction(Direction::Horizontal)
-                    .constraints([Constraint::Length(text_width), Constraint::Min(0)])
-                    .split(chunk)
-            } else {
-                Layout::default()
-                    .direction(Direction::Horizontal)
-                    .constraints([Constraint::Min(0), Constraint::Length(text_width)])
-                    .split(chunk)
-            };
+            let horizontal_layout = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints(if msg.sender == 0 {
+                    [Constraint::Min(0), Constraint::Length(text_width)]
+                } else {
+                    [Constraint::Length(text_width), Constraint::Min(0)]
+                })
+                .split(chunk);
 
             let formatted_timestamp = msg.timestamp.format("%H:%M").to_string();
 
             let bubble_block = Block::default()
                 .borders(Borders::ALL)
                 .style(if msg.sender == 0 {
-                    Style::default().fg(Color::Gray)
-                } else {
                     Style::default().fg(Color::Cyan)
+                } else {
+                    Style::default().fg(Color::Gray)
                 })
                 .title(if msg.sender == 0 {
-                    Line::from(formatted_timestamp).left_aligned()
-                } else {
                     Line::from(formatted_timestamp).right_aligned()
+                } else {
+                    Line::from(formatted_timestamp).left_aligned()
                 });
 
             let paragraph = Paragraph::new(text).block(bubble_block);
 
-            let position = if msg.sender == 0 { 0 } else { 1 };
+            let position = if msg.sender == 0 { 1 } else { 0 };
             frame.render_widget(paragraph, horizontal_layout[position]);
         }
 
