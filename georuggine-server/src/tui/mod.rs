@@ -162,17 +162,17 @@ impl App {
                         )))
                         .await
                         .unwrap();
-                } else {
-                    self.state
-                        .tx
-                        .send(AppEvent::NewMessage(UIMessage::new(
-                            0,
-                            TextMessage::new(msg.clone()),
-                        )))
-                        .await
-                        .unwrap();
                 }
             }
+
+            self.state
+                .tx
+                .send(AppEvent::NewMessage(UIMessage::new(
+                    0,
+                    TextMessage::new(msg.clone()),
+                )))
+                .await
+                .unwrap();
 
             return;
         } else if self.user_info_popup.visible {
