@@ -89,3 +89,4 @@ impl Display for Coordinates {
         write!(f, "({}, {})", self.lat, self.lon)
     }
 }
+

@@ -21,6 +21,10 @@ pub const BASE_URL: &str = "/api/v1";
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // channel to send messages to the UI
     let (tx, rx) = mpsc::channel(100);
+    georuggine_server::logger::start_cpu_logger(
+        std::time::Duration::from_secs(120),
+        "cpu_usage.log",
+    );
 
     let app_state = Arc::new(AppState::new(
         db::init(false).await?,
