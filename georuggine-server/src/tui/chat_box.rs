@@ -9,7 +9,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
 };
 
-use crate::messages::TextMessage;
+use crate::messages::text::TextMessage;
 
 #[derive(Default, Clone)]
 pub struct UIMessage {

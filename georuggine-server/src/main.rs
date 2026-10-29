@@ -64,7 +64,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap();
     });
 
-    let users = UserRepository::get_users(&app_state.db).await?;
+    let users = UserRepository::new(app_state.db.clone())
+        .get_users()
+        .await?;
     let terminal = ratatui::init();
     let app_result = App::new(rx, users, Arc::clone(&app_state))
         .run(terminal)

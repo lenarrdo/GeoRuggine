@@ -2,7 +2,10 @@ use chrono::{DateTime, Utc};
 use sqlx::{QueryBuilder, SqlitePool};
 use std::collections::HashMap;
 
-use crate::{messages::Coordinates, tui::TimeFrame};
+use crate::{
+    messages::{Coordinates, position::Journey},
+    tui::TimeFrame,
+};
 
 #[derive(sqlx::FromRow)]
 struct PositionRow {
@@ -35,7 +38,7 @@ impl MessageRepository {
         .bind(journey_id)
         .bind(position.lat)
         .bind(position.lon)
-        .bind(position.received_at().to_rfc3339())
+        .bind(position.timestamp.to_rfc3339())
         .execute(&self.db_pool)
         .await?;
 
@@ -46,7 +49,7 @@ impl MessageRepository {
         &self,
         user_id: u32,
         time_frame: TimeFrame,
-    ) -> Result<Vec<Vec<Coordinates>>, sqlx::Error> {
+    ) -> Result<Vec<Journey>, sqlx::Error> {
         let mut query_builder = QueryBuilder::new(
             "SELECT lat, lon, journey_id, timestamp FROM positions WHERE user_id =",
         );
@@ -66,18 +69,24 @@ impl MessageRepository {
             .fetch_all(&self.db_pool)
             .await?;
 
-        let mut map: HashMap<String, Vec<Coordinates>> = HashMap::new();
-
+        let mut positions: HashMap<String, Vec<Coordinates>> = HashMap::new();
         for row in rows {
-            map.entry(row.journey_id).or_default().push(Coordinates {
-                lat: row.lat,
-                lon: row.lon,
-                timestamp: row.timestamp,
-            });
+            // map.entry(row.journey_id).and_modify(|journey| journey.)
+            positions
+                .entry(row.journey_id)
+                .or_default()
+                .push(Coordinates {
+                    lat: row.lat,
+                    lon: row.lon,
+                    timestamp: row.timestamp,
+                });
         }
 
-        let positions: Vec<Vec<Coordinates>> = map.into_values().collect();
+        let journeys: Vec<Journey> = positions
+            .into_iter()
+            .map(|(key, coords)| Journey::new(key, coords))
+            .collect();
 
-        Ok(positions)
+        Ok(journeys)
     }
 }

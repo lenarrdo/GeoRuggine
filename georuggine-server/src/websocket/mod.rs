@@ -16,8 +16,8 @@ use std::{ops::ControlFlow, sync::Arc};
 use tokio::sync::mpsc;
 
 use crate::{
-    auth::services::token_service,
-    messages::{ClientIncomingMessage, TextMessage, message_repository::MessageRepository},
+    auth::auth_service::AuthService,
+    messages::{ClientIncomingMessage, position::repository::MessageRepository, text::TextMessage},
     shared::{app_state::AppState, utils},
     tui::{AppEvent, chat_box::UIMessage},
     websocket::clients::ConnectedClient,
@@ -40,15 +40,15 @@ pub async fn ws_handler(
     State(state): State<Arc<AppState>>,
     ws: WebSocketUpgrade,
 ) -> Result<impl IntoResponse, (StatusCode, Json<WsResponse>)> {
-    let claims =
-        token_service::validate_jwt(&params.token, &state.config.jwt_secret).map_err(|_| {
-            (
-                StatusCode::UNAUTHORIZED,
-                Json(WsResponse {
-                    message: "WebSockets can be only opened by authorized users.".to_string(),
-                }),
-            )
-        })?;
+    let auth_service = AuthService::new(state.db.clone(), state.config.jwt_secret.clone());
+    let claims = auth_service.validate_jwt(&params.token).map_err(|_| {
+        (
+            StatusCode::UNAUTHORIZED,
+            Json(WsResponse {
+                message: "WebSockets can be only opened by authorized users.".to_string(),
+            }),
+        )
+    })?;
 
     if state.clients.list.contains_key(&claims.user_id) {
         return Err((

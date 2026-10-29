@@ -2,7 +2,7 @@ use dashmap::DashMap;
 use tokio::sync::mpsc::Sender;
 
 use crate::{
-    messages::{Coordinates, TextMessage},
+    messages::{position::Coordinates, text::TextMessage},
     shared::utils::INACTIVE_THRESHOLD,
     tui::chat_box::UIMessage,
 };
@@ -80,8 +80,8 @@ impl ClientsList {
             .unwrap();
 
         if last_position
-            .received_at()
-            .signed_duration_since(first_same_as_last.received_at())
+            .timestamp
+            .signed_duration_since(first_same_as_last.timestamp)
             > INACTIVE_THRESHOLD
         {
             return false;

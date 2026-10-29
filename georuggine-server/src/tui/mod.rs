@@ -18,7 +18,7 @@ use tokio::sync::mpsc::Receiver;
 
 use crate::{
     auth::user_repository::UserEntity,
-    messages::{TextMessage, message_repository::MessageRepository},
+    messages::{position::repository::MessageRepository, text::TextMessage},
     shared::app_state::AppState,
     tui::{
         chat_box::{ChatBox, UIMessage},

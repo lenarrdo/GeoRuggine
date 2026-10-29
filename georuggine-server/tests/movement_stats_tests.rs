@@ -1,10 +1,10 @@
 use chrono::{DateTime, Duration, TimeDelta, Utc};
-use georuggine_server::messages::{Coordinates, message_service};
+use georuggine_server::messages::position::{Coordinates, Journey, service::get_movement_stats};
 
 #[tokio::test]
 async fn no_positions() {
-    let positions: Vec<Vec<Coordinates>> = vec![];
-    let (t_moving, t_not_moving) = message_service::get_movement_stats(&positions);
+    let journeys: Vec<Journey> = vec![];
+    let (t_moving, t_not_moving) = get_movement_stats(&journeys);
 
     assert_eq!(t_moving, Duration::zero());
     assert_eq!(t_not_moving, Duration::zero());
@@ -12,8 +12,11 @@ async fn no_positions() {
 
 #[tokio::test]
 async fn one_position() {
-    let positions: Vec<Vec<Coordinates>> = vec![vec![Coordinates::new(10.0, 10.0, Utc::now())]];
-    let (t_moving, t_not_moving) = message_service::get_movement_stats(&positions);
+    let journeys: Vec<Journey> = vec![Journey::new(
+        "0".to_string(),
+        vec![Coordinates::new(10.0, 10.0, Utc::now())],
+    )];
+    let (t_moving, t_not_moving) = get_movement_stats(&journeys);
 
     // one position is not enough data to compute time spent moving
     assert_eq!(t_moving, Duration::zero());
@@ -22,14 +25,15 @@ async fn one_position() {
 
 #[tokio::test]
 async fn user_moving_two_positions() {
-    // Usiamo direttamente una stringa in formato RFC 3339
     let dt = "2015-06-03T12:34:56Z".parse::<DateTime<Utc>>().unwrap();
-
-    let positions: Vec<Vec<Coordinates>> = vec![vec![
-        Coordinates::new(10.0, 10.0, dt),
-        Coordinates::new(10.2, 10.0, dt + Duration::seconds(30)),
-    ]];
-    let (t_moving, t_not_moving) = message_service::get_movement_stats(&positions);
+    let journeys: Vec<Journey> = vec![Journey::new(
+        "0".to_string(),
+        vec![
+            Coordinates::new(10.0, 10.0, dt),
+            Coordinates::new(10.2, 10.0, dt + Duration::seconds(30)),
+        ],
+    )];
+    let (t_moving, t_not_moving) = get_movement_stats(&journeys);
 
     assert_eq!(
         t_moving,
@@ -41,15 +45,17 @@ async fn user_moving_two_positions() {
 #[tokio::test]
 async fn user_moving_many_positions() {
     let dt = "2015-06-03T12:34:56Z".parse::<DateTime<Utc>>().unwrap();
-
-    let positions: Vec<Vec<Coordinates>> = vec![vec![
-        Coordinates::new(10.0, 10.0, dt),
-        Coordinates::new(10.2, 10.0, dt + Duration::seconds(30)),
-        Coordinates::new(10.2, 10.0, dt + Duration::seconds(60)),
-        Coordinates::new(10.2, 10.0, dt + Duration::seconds(90)),
-        Coordinates::new(10.5, 10.0, dt + Duration::seconds(120)),
-    ]];
-    let (t_moving, t_not_moving) = message_service::get_movement_stats(&positions);
+    let joruneys: Vec<Journey> = vec![Journey::new(
+        "0".to_string(),
+        vec![
+            Coordinates::new(10.0, 10.0, dt),
+            Coordinates::new(10.2, 10.0, dt + Duration::seconds(30)),
+            Coordinates::new(10.2, 10.0, dt + Duration::seconds(60)),
+            Coordinates::new(10.2, 10.0, dt + Duration::seconds(90)),
+            Coordinates::new(10.5, 10.0, dt + Duration::seconds(120)),
+        ],
+    )];
+    let (t_moving, t_not_moving) = get_movement_stats(&joruneys);
 
     assert_eq!(
         t_moving,
@@ -62,7 +68,7 @@ async fn user_moving_many_positions() {
 async fn pause_is_detected() {
     let dt = "2015-06-03T12:34:56Z".parse::<DateTime<Utc>>().unwrap();
 
-    let mut journey: Vec<Coordinates> = vec![];
+    let mut journey = Journey::new("0".to_string(), vec![]);
     for i in 0..=5 {
         journey.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(30 * i)));
     }
@@ -74,7 +80,7 @@ async fn pause_is_detected() {
     journey.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(30 * 7)));
 
     let positions = vec![journey];
-    let (t_moving, t_not_moving) = message_service::get_movement_stats(&positions);
+    let (t_moving, t_not_moving) = get_movement_stats(&positions);
 
     assert_eq!(
         t_moving,
@@ -90,7 +96,7 @@ async fn pause_is_detected() {
 async fn movement_and_pause() {
     let dt = "2015-06-03T12:34:56Z".parse::<DateTime<Utc>>().unwrap();
 
-    let mut journey: Vec<Coordinates> = vec![];
+    let mut journey = Journey::new("0".to_string(), vec![]);
 
     // user moves for 60s...
     journey.push(Coordinates::new(10.0, 10.0, dt));
@@ -116,7 +122,7 @@ async fn movement_and_pause() {
     ));
 
     let positions = vec![journey];
-    let (t_moving, t_not_moving) = message_service::get_movement_stats(&positions);
+    let (t_moving, t_not_moving) = get_movement_stats(&positions);
 
     assert_eq!(
         t_moving,

@@ -8,7 +8,10 @@ use ratatui::{
 };
 
 use crate::{
-    messages::{Coordinates, message_service},
+    messages::position::{
+        Journey,
+        service::{get_average_speed, get_movement_stats},
+    },
     shared::utils,
     tui::{TimeFrame, user_list::User},
 };
@@ -82,11 +85,11 @@ impl UserInfoPopup {
         (self.user.id, TimeFrame::from_index(self.selected_tab))
     }
 
-    pub fn update_movement_stats(&mut self, positions: &[Vec<Coordinates>]) {
-        let (time_moving, time_not_moving) = message_service::get_movement_stats(&positions);
+    pub fn update_movement_stats(&mut self, journeys: &[Journey]) {
+        let (time_moving, time_not_moving) = get_movement_stats(journeys);
         self.time_moving = utils::format_chrono_duration(time_moving);
         self.time_not_moving = utils::format_chrono_duration(time_not_moving);
 
-        self.avg_speed = message_service::get_average_speed(&positions).unwrap_or_default();
+        self.avg_speed = get_average_speed(&journeys).unwrap_or_default();
     }
 }
