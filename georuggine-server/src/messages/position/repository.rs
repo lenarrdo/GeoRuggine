@@ -16,13 +16,13 @@ struct PositionRow {
 }
 
 #[derive(Clone)]
-pub struct MessageRepository {
+pub struct PositionRepository {
     db_pool: SqlitePool,
 }
 
-impl MessageRepository {
+impl PositionRepository {
     pub fn new(db_pool: SqlitePool) -> Self {
-        MessageRepository { db_pool }
+        PositionRepository { db_pool }
     }
 
     pub async fn save_position(

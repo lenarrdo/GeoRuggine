@@ -18,7 +18,7 @@ use tokio::sync::mpsc::Receiver;
 
 use crate::{
     auth::user_repository::UserEntity,
-    messages::{position::repository::MessageRepository, text::TextMessage},
+    messages::{position::repository::PositionRepository, text::TextMessage},
     shared::app_state::AppState,
     tui::{
         chat_box::{ChatBox, UIMessage},
@@ -181,7 +181,7 @@ impl App {
                 return;
             };
 
-            let Ok(positions) = MessageRepository::new(self.state.db.clone())
+            let Ok(positions) = PositionRepository::new(self.state.db.clone())
                 .get_positions(user_id, time_frame)
                 .await
             else {
@@ -222,7 +222,7 @@ impl App {
                         return;
                     };
 
-                    let positions = MessageRepository::new(self.state.db.clone())
+                    let positions = PositionRepository::new(self.state.db.clone())
                         .get_positions(user.id, TimeFrame::Today)
                         .await
                         .unwrap_or_default();

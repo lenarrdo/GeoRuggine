@@ -1,3 +1,4 @@
+use chrono::Utc;
 use dashmap::DashMap;
 use tokio::sync::mpsc::Sender;
 
@@ -11,7 +12,7 @@ use crate::{
 pub struct ConnectedClient {
     tx: Sender<TextMessage>,
     journey_id: Option<String>,
-    positions: Vec<Coordinates>,
+    last_position: Option<Coordinates>,
     messages: Vec<UIMessage>,
 }
 
@@ -20,7 +21,7 @@ impl ConnectedClient {
         ConnectedClient {
             tx,
             journey_id: None,
-            positions: vec![],
+            last_position: None,
             messages: vec![],
         }
     }
@@ -38,25 +39,33 @@ impl ClientsList {
     }
 
     pub async fn send_one(&self, user_id: u32, msg: &str) -> Result<(), String> {
-        let Some(mut client) = self.list.get_mut(&user_id) else {
-            return Err(format!(
-                "user_id {user_id} non trovato, messaggio non inviato."
-            ));
+        let (tx, text_message) = {
+            let client = self.list.get_mut(&user_id).ok_or(format!(
+                "Couldn't send message: user #{user_id} not online."
+            ))?;
+            (client.tx.clone(), TextMessage::new(msg.to_string()))
         };
 
-        let text_message = TextMessage::new(msg.to_string());
-        if let Err(e) = client.tx.send(text_message.clone()).await {
-            return Err(format!("Errore invio a user_id {user_id}: {e}"));
-        }
+        tx.send(text_message.clone())
+            .await
+            .map_err(|e| format!("Couldn't send message to User #{user_id}: {e}"))?;
 
-        client.messages.push(UIMessage::new(0, text_message));
+        // client.messages.push(UIMessage::new(0, text_message));
 
         Ok(())
     }
 
-    pub fn record_position(&self, user_id: u32, pos: Coordinates) {
-        if let Some(mut client) = self.list.get_mut(&user_id) {
-            client.positions.push(pos);
+    pub fn update_position(&self, user_id: u32, new: Coordinates) {
+        let Some(mut client) = self.list.get_mut(&user_id) else {
+            return;
+        };
+
+        if client
+            .last_position
+            .as_ref()
+            .is_none_or(|last| *last != new)
+        {
+            client.last_position = Some(new);
         }
     }
 
@@ -65,29 +74,11 @@ impl ClientsList {
             return false;
         };
 
-        // first position received, the user is moving.
-        if client.positions.is_empty() {
-            return true;
-        }
-
-        let last_position: &Coordinates = client.positions.last().unwrap();
-        let first_same_as_last = client
-            .positions
-            .iter()
-            .rev()
-            .take_while(|&pos| pos == last_position)
-            .last()
-            .unwrap();
-
-        if last_position
-            .timestamp
-            .signed_duration_since(first_same_as_last.timestamp)
-            > INACTIVE_THRESHOLD
-        {
+        let Some(last_position) = client.last_position.as_ref() else {
             return false;
-        }
+        };
 
-        true
+        Utc::now().signed_duration_since(last_position.timestamp) < INACTIVE_THRESHOLD
     }
 
     pub fn get_journey_id(&self, user_id: u32) -> Option<String> {

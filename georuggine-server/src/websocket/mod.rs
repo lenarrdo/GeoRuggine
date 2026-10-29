@@ -1,4 +1,5 @@
 pub mod clients;
+pub mod dto;
 
 use axum::{
     Json,
@@ -11,30 +12,22 @@ use axum::{
 };
 use chrono::Utc;
 use futures_util::{sink::SinkExt, stream::StreamExt};
-use serde::{Deserialize, Serialize};
 use std::{ops::ControlFlow, sync::Arc};
 use tokio::sync::mpsc;
 
 use crate::{
     auth::auth_service::AuthService,
-    messages::{ClientIncomingMessage, position::repository::MessageRepository, text::TextMessage},
+    messages::{
+        ClientIncomingMessage, position::repository::PositionRepository, text::TextMessage,
+    },
     shared::{app_state::AppState, utils},
     tui::{AppEvent, chat_box::UIMessage},
-    websocket::clients::ConnectedClient,
+    websocket::{
+        clients::ConnectedClient,
+        dto::{WsParams, WsResponse},
+    },
 };
 
-#[derive(Deserialize)]
-pub struct WsParams {
-    token: String,
-}
-
-/// Messaggio restituito in caso di errore durante l'apertura di un socket.
-#[derive(Debug, Clone, Serialize)]
-pub struct WsResponse {
-    pub message: String,
-}
-
-/// Handler HTTP iniziale per la rotta WebSocket (es. `GET {BASE_URL}/ws`).
 pub async fn ws_handler(
     Query(params): Query<WsParams>,
     State(state): State<Arc<AppState>>,
@@ -62,7 +55,6 @@ pub async fn ws_handler(
     Ok(ws.on_upgrade(move |socket| handle_socket(socket, claims.user_id, state)))
 }
 
-/// Gestisce l'intero ciclo di vita di una singola connessione WebSocket attiva.
 pub async fn handle_socket(socket: WebSocket, user_id: u32, state: Arc<AppState>) {
     let (mut ws_sender, mut ws_receiver) = socket.split();
     let (tx, mut rx) = mpsc::channel::<TextMessage>(100);
@@ -123,13 +115,12 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, state: Arc<AppState>
     .await;
 }
 
-/// Elabora i singoli messaggi ricevuti dal client via WebSocket.
 pub async fn process_message(
     msg: Message,
     user_id: u32,
     state: Arc<AppState>,
 ) -> ControlFlow<(), ()> {
-    let message_repo = MessageRepository::new(state.db.clone());
+    let pos_repo = PositionRepository::new(state.db.clone());
     match msg {
         Message::Text(t) => match serde_json::from_str::<ClientIncomingMessage>(&t) {
             Ok(ClientIncomingMessage::Position(pos)) => {
@@ -139,14 +130,14 @@ pub async fn process_message(
                     state.clients.set_journey_id(user_id, &new_id);
                     journey_id = Some(new_id);
                 }
-                let _err = message_repo
+                let _ = pos_repo
                     .save_position(user_id, &journey_id.unwrap(), &pos)
                     .await;
 
                 let msg = format!("Received coordinates {} from User {user_id}.", pos);
-                state.tx.send(AppEvent::LogMessage(msg)).await.unwrap();
+                let _ = state.tx.send(AppEvent::LogMessage(msg)).await;
 
-                state.clients.record_position(user_id, pos);
+                state.clients.update_position(user_id, pos);
                 let event = if state.clients.is_moving(user_id) {
                     AppEvent::UserMoving(user_id)
                 } else {
