@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Container } from "react-bootstrap";
 import { AuthLayout } from "./components/auth/AuthLayout";
 import { LoginForm } from "./components/auth/LoginForm";
@@ -9,20 +9,23 @@ import {
   apiLogin,
   apiRegister,
   apiLogout,
-  apiGetCurrentUser,
   apiSendChatMessage,
   onChatMessageReceived,
-  isInTauri,
+  onWsDisconnected,
 } from "./services/tauriBridge";
+import { Modal, Button } from "react-bootstrap";
 import { UserSession, LoginFormData, RegisterFormData } from "./types/auth";
 import { UiMessage, ChatMessage } from "./types/chat";
 import "./App.css";
 
-function formatCurrentTime(): string {
-  const now = new Date();
-  const hours = String(now.getHours()).padStart(2, "0");
-  const minutes = String(now.getMinutes()).padStart(2, "0");
+function formatTime(date: Date): string {
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
   return `${hours}:${minutes}`;
+}
+
+function formatCurrentTime(): string {
+  return formatTime(new Date());
 }
 
 export function App() {
@@ -33,33 +36,13 @@ export function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
+  const [serverDown, setServerDown] = useState(false);
 
-  // Inizializza la cronologia messaggi vuota
+  // Initialize the message history as empty
   const [messages, setMessages] = useState<UiMessage[]>([]);
-  const mockTimeoutRef = useRef<number | null>(null);
 
-  // Controlla se c'è già una sessione attiva all'avvio
-  useEffect(() => {
-    async function checkExistingSession() {
-      const session = await apiGetCurrentUser();
-      if (session) {
-        setCurrentUser(session);
-      }
-    }
-    checkExistingSession();
-  }, []);
-
-  // Cleanup eventuale timeout simulazione su unmount
-  useEffect(() => {
-    return () => {
-      if (mockTimeoutRef.current) {
-        clearTimeout(mockTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // Registrazione dei listener di eventi Tauri: attivo solo per l'utente loggato
-  // Alla disconnessione o cambio utente, stacca il listener e resetta i messaggi
+  // Tauri event listener registration: only active while a user is logged in.
+  // On disconnect or user change, the listeners are detached and messages reset
   useEffect(() => {
     if (!currentUser) {
       setMessages([]);
@@ -68,46 +51,59 @@ export function App() {
 
     let isCancelled = false;
     let unlisten: (() => void) | undefined;
+    let unlistenDisconnect: (() => void) | undefined;
 
     async function setupListeners() {
-      // Ascolto nuovi messaggi di chat in arrivo via WebSocket dal server
-      const fn = await onChatMessageReceived((msg: ChatMessage) => {
-        const timeStr = msg.timestamp
-          ? new Date(msg.timestamp).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : formatCurrentTime();
+      try {
+        // Connection to the server lost while the user is logged in
+        const fnDisconnect = await onWsDisconnected(() => setServerDown(true));
+        if (isCancelled) {
+          fnDisconnect();
+        } else {
+          unlistenDisconnect = fnDisconnect;
+        }
 
-        const messageId = `msg-${Date.now()}-${Math.random()}`;
-        const senderName = "Server";
+        // Listen for new chat messages coming from the server over the WebSocket
+        const fn = await onChatMessageReceived((msg: ChatMessage) => {
+          const msgDate = msg.timestamp ? new Date(msg.timestamp) : null;
+          const timeStr =
+            msgDate && !isNaN(msgDate.getTime())
+              ? formatTime(msgDate)
+              : formatCurrentTime();
 
-        setMessages((prev) => {
-          // Prevenzione rigorosa dei duplicati (stesso testo e stesso orario/timestamp)
-          const alreadyExists = prev.some(
-            (m) => !m.isSelf && m.text === msg.contents && m.time === timeStr
-          );
-          if (alreadyExists) {
-            return prev;
-          }
+          const messageId = `msg-${Date.now()}-${Math.random()}`;
+          const senderName = "Server";
 
-          return [
-            ...prev,
-            {
-              id: messageId,
-              isSelf: false,
-              senderName,
-              text: msg.contents,
-              time: timeStr,
-            },
-          ];
+          setMessages((prev) => {
+            // Strict duplicate prevention (same text and same time/timestamp)
+            const alreadyExists = prev.some(
+              (m) => !m.isSelf && m.text === msg.contents && m.time === timeStr
+            );
+            if (alreadyExists) {
+              return prev;
+            }
+
+            return [
+              ...prev,
+              {
+                id: messageId,
+                isSelf: false,
+                senderName,
+                text: msg.contents,
+                time: timeStr,
+              },
+            ];
+          });
         });
-      });
 
-      if (isCancelled) {
-        fn();
-      } else {
-        unlisten = fn;
+        if (isCancelled) {
+          fn();
+        } else {
+          unlisten = fn;
+        }
+      } catch {
+        // Listener not registered: the app stays usable but without server events
+        setServerDown(true);
       }
     }
 
@@ -118,19 +114,22 @@ export function App() {
       if (unlisten) {
         unlisten();
       }
+      if (unlistenDisconnect) {
+        unlistenDisconnect();
+      }
     };
   }, [currentUser]);
 
-  // Gestione Login
+  // Login handling
   const handleLogin = async (data: LoginFormData) => {
     setIsLoading(true);
     setAuthError(null);
     setAuthSuccess(null);
     try {
-      const res = await apiLogin(data.email, data.password);
+      const res = await apiLogin(data.username, data.password);
       if (res.success) {
-        setMessages([]); // Reset preventivo di eventuali messaggi residui
-        setCurrentUser({ username: data.email });
+        setMessages([]); // Preventive reset of any leftover messages
+        setCurrentUser({ username: data.username });
       } else {
         setAuthError(res.message);
       }
@@ -140,27 +139,27 @@ export function App() {
           ? err
           : err instanceof Error
           ? err.message
-          : "Errore durante il login. Controlla le credenziali.";
+          : "Login failed. Check your credentials.";
       setAuthError(errorMsg);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Gestione Registrazione
+  // Registration handling
   const handleRegister = async (data: RegisterFormData) => {
     setIsLoading(true);
     setAuthError(null);
     setAuthSuccess(null);
     try {
-      const regRes = await apiRegister(data.email, data.password);
+      const regRes = await apiRegister(data.username, data.password);
       if (regRes.success) {
-        // Successo: riporta l'utente al login con messaggio di successo
-        setAuthSuccess("Registrazione avvenuta con successo, ora puoi effettuare il login.");
+        // Success: send the user back to login with a success message
+        setAuthSuccess("Registration successful. You can now sign in.");
         setAuthError(null);
         setAuthView("login");
       } else {
-        // Fallimento: rimane sulla schermata di registrazione e mostra il problema
+        // Failure: stay on the registration screen and show the problem
         setAuthError(regRes.message);
       }
     } catch (err: unknown) {
@@ -169,42 +168,39 @@ export function App() {
           ? err
           : err instanceof Error
           ? err.message
-          : "Errore durante la registrazione.";
+          : "Registration failed.";
       setAuthError(errorMsg);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Gestione Logout: reset completo dello stato utente, cronologia chat ed errori
+  // Logout handling: full reset of user state, chat history and errors
   const handleLogout = async () => {
     try {
       await apiLogout();
-    } catch (err) {
-      console.warn("Errore logout:", err);
+    } catch {
+      // Backend error ignored: the local session is cleared in the finally block anyway
     } finally {
-      if (mockTimeoutRef.current) {
-        clearTimeout(mockTimeoutRef.current);
-        mockTimeoutRef.current = null;
-      }
       setMessages([]);
       setCurrentUser(null);
       setAuthView("login");
       setAuthError(null);
       setAuthSuccess(null);
       setActiveTab("chat");
+      setServerDown(false);
     }
   };
 
-  // Invio messaggio di chat
+  // Chat message sending
   const handleSendMessage = async (text: string) => {
+    const messageId = `msg-${Date.now()}-${Math.random()}`;
     const newMsg: UiMessage = {
-      id: `msg-${Date.now()}`,
+      id: messageId,
       isSelf: true,
-      senderName: currentUser?.username || "Tu",
+      senderName: currentUser?.username || "You",
       text,
       time: formatCurrentTime(),
-      delivered: true,
     };
 
     setMessages((prev) => [...prev, newMsg]);
@@ -212,24 +208,11 @@ export function App() {
     try {
       await apiSendChatMessage(text);
     } catch (err) {
-      console.error("Errore invio messaggio chat:", err);
-    }
-
-    // Se non siamo in Tauri (simulazione browser per anteprima UI), generiamo una risposta mock
-    if (!isInTauri()) {
-      mockTimeoutRef.current = window.setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `msg-echo-${Date.now()}`,
-            isSelf: false,
-            senderName: "Server",
-            text: `Messaggio ricevuto dal server: "${text}"`,
-            time: formatCurrentTime(),
-          },
-        ]);
-        mockTimeoutRef.current = null;
-      }, 1200);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, failed: true } : m))
+      );
+      // Rethrow the error: ChatInput restores the text in the input bar
+      throw err;
     }
   };
 
@@ -241,7 +224,7 @@ export function App() {
     <Container fluid className="app-window-frame vh-100 vw-100 p-0 d-flex overflow-hidden bg-dark">
       <main className="app-main-content flex-grow-1 d-flex overflow-hidden bg-dark">
         {!currentUser ? (
-          /* Schermate di Autenticazione (Login / Registrazione con Split Layout) */
+          /* Authentication screens (Login / Registration with split layout) */
           <AuthLayout>
             {authView === "login" ? (
               <LoginForm
@@ -269,7 +252,7 @@ export function App() {
             )}
           </AuthLayout>
         ) : (
-          /* Schermata Principale Post-Autenticazione: Sidebar & Chat Area */
+          /* Main post-authentication screen: sidebar and chat area */
           <div className="d-flex w-100 h-100 overflow-hidden chat-dashboard-layout">
             <ChatSidebar
               activeTab={activeTab}
@@ -285,6 +268,19 @@ export function App() {
           </div>
         )}
       </main>
+
+      <Modal show={serverDown && !!currentUser} backdrop="static" keyboard={false} centered>
+          <Modal.Body className="font-monospace">
+            There was a problem with the server.
+            <br />
+            We are sorry for the inconvenience.
+          </Modal.Body>
+        <Modal.Footer>
+          <Button variant="primary" onClick={handleLogout}>
+            Back to login
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 }

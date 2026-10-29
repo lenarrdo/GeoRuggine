@@ -28,14 +28,14 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
   return (
     <div className="d-flex flex-column h-100 flex-grow-1 bg-dark text-light overflow-hidden chat-main-view">
-      {/* Header chat con opzioni */}
+      {/* Chat header with options */}
       <ChatHeader
         currentUser={currentUser}
         onLogout={onLogout}
         onClearChat={onClearChat}
       />
 
-      {/* Lista messaggi a scorrimento */}
+      {/* Scrollable message list */}
       <div className="flex-grow-1 overflow-y-auto p-4 chat-messages-container">
         <div
           className="d-flex flex-column gap-3 mx-auto chat-messages-inner"
@@ -46,8 +46,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
               <div className="p-3 rounded-circle bg-secondary bg-opacity-10 border border-secondary border-opacity-25 mb-3">
                 <MessageSquare size={32} className="text-info opacity-75" />
               </div>
-              <p className="mb-1 text-light fw-semibold">Nessun messaggio nella conversazione</p>
-              <p className="small text-secondary mb-0">Invia un messaggio per avviare la chat.</p>
+              <p className="mb-1 text-light fw-semibold">No messages in this conversation</p>
+              <p className="small text-secondary mb-0">Send a message to start chatting.</p>
             </div>
           ) : (
             messages.map((msg) => (
@@ -58,7 +58,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
         </div>
       </div>
 
-      {/* Barra di digitazione e invio */}
+      {/* Typing and send bar */}
       <ChatInput onSendMessage={onSendMessage} />
     </div>
   );

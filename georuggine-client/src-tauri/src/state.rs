@@ -8,13 +8,13 @@ type WsTx = Arc<Mutex<Option<mpsc::UnboundedSender<ClientIncomingMessage>>>>;
 type Handle = Arc<Mutex<Option<AbortHandle>>>;
 type Session = Arc<Mutex<Option<UserSession>>>;
 
-/// Stato condiviso thread-safe dell'applicazione client
+/// Thread-safe shared state of the client application
 #[derive(Default, Clone)]
 pub struct AppState {
     pub session: Session,
-    // Canale MPSC condiviso tra i produttori (UI e Tracking) e il consumatore (Task 1 sul Web)
+    // MPSC channel shared between the producers (UI and Tracking) and the consumer (Task 1 on the Web)
     pub ws_tx: WsTx,
-    // Handle dei task per distruzione immediata alla chiusura
+    // Task handles for immediate destruction on shutdown
     pub tracking_abort: Handle,
     pub send_abort: Handle,
     pub recv_abort: Handle,
@@ -38,52 +38,56 @@ impl AppState {
         Ok(guard.clone())
     }
 
-    /// Inserisce un messaggio nel canale MPSC condiviso
+    /// Checks whether the WebSocket connection is currently active
+    pub fn is_ws_connected(&self) -> bool {
+        self.ws_tx
+            .lock()
+            .map(|guard| guard.is_some())
+            .unwrap_or(false)
+    }
+
+    /// Enqueues a message on the shared MPSC channel
     pub fn send_ws_message(&self, msg: ClientIncomingMessage) -> Result<(), String> {
         let guard = self.ws_tx.lock().map_err(|e| e.to_string())?;
         if let Some(tx) = guard.as_ref() {
             tx.send(msg)
-                .map_err(|e| format!("Errore accodamento messaggio sul canale MPSC: {e}"))
+                .map_err(|e| format!("Failed to enqueue message on the MPSC channel: {e}"))
         } else {
-            Err("WebSocket non connessa al server".to_string())
+            Err("WebSocket is not connected to the server".to_string())
         }
     }
 
-    /// Distrugge completamente tutte le risorse alla disconnessione:
-    /// - Abortisce il task di tracking (Task 3)
-    /// - Abortisce il task di trasmissione (Task 1)
-    /// - Abortisce il task di ricezione (Task 2)
-    /// - Distrugge il canale MPSC azzerando il sender (ws_tx = None)
-    /// - Rilascia il socket TCP sottostante (inviando FIN al server)
+    /// Fully destroys every resource on disconnect:
+    /// - Aborts the tracking task (Task 3)
+    /// - Aborts the transmission task (Task 1)
+    /// - Aborts the reception task (Task 2)
+    /// - Destroys the MPSC channel by clearing the sender (ws_tx = None)
+    /// - Releases the underlying TCP socket (sending FIN to the server)
     pub fn disconnect_ws(&self) {
-        // 1. Ferma e distrugge il task di tracking (Task 3)
+        // 1. Stop and destroy the tracking task (Task 3)
         if let Ok(mut guard) = self.tracking_abort.lock() {
             if let Some(handle) = guard.take() {
                 handle.abort();
-                println!("[Tracking] Task tracking abortito e distrutto");
             }
         }
 
-        // 2. Ferma e distrugge il task di trasmissione (Task 1)
+        // 2. Stop and destroy the transmission task (Task 1)
         if let Ok(mut guard) = self.send_abort.lock() {
             if let Some(handle) = guard.take() {
                 handle.abort();
-                println!("[WS Client] Task 1 (Trasmissione) abortito e distrutto");
             }
         }
 
-        // 3. Ferma e distrugge il task di ricezione (Task 2)
+        // 3. Stop and destroy the reception task (Task 2)
         if let Ok(mut guard) = self.recv_abort.lock() {
             if let Some(handle) = guard.take() {
                 handle.abort();
-                println!("[WS Client] Task 2 (Ricezione) abortito e distrutto");
             }
         }
 
-        // 4. Distrugge il canale MPSC rilasciando il Sender
+        // 4. Destroy the MPSC channel by dropping the Sender
         if let Ok(mut tx_guard) = self.ws_tx.lock() {
             *tx_guard = None;
-            println!("[WS Client] Canale MPSC azzerato e deallocato");
         }
     }
 }

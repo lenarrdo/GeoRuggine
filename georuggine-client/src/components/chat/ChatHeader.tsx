@@ -32,7 +32,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         <button
           type="button"
           className="btn btn-outline-secondary btn-sm p-1 d-flex align-items-center justify-content-center border-0 header-action-btn"
-          title="Opzioni"
+          title="Options"
           onClick={() => setMenuOpen(!menuOpen)}
         >
           <MoreVertical size={20} />
@@ -62,7 +62,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                     }}
                   >
                     <Trash2 size={14} />
-                    <span>Pulisci chat</span>
+                    <span>Clear chat</span>
                   </button>
                 </li>
               )}
@@ -76,7 +76,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   }}
                 >
                   <LogOut size={14} />
-                  <span>Disconnetti account</span>
+                  <span>Sign out</span>
                 </button>
               </li>
             </ul>

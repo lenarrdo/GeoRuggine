@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-/// Coordinate geografiche inviate dal client al server (il timestamp viene calcolato dal client)
+/// Geographic coordinates sent by the client to the server (the timestamp is computed by the client)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PositionUpdate {
     pub x_coord: i64,
@@ -9,7 +9,7 @@ pub struct PositionUpdate {
     pub timestamp: Option<String>,
 }
 
-/// Punto di coordinate letto da file (JSON o CSV)
+/// Coordinate point read from a file (JSON or CSV)
 #[derive(Debug, Clone, Deserialize)]
 pub struct CoordinatePoint {
     #[serde(alias = "x_coord")]

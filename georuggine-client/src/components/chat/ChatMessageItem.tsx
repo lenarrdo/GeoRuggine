@@ -12,11 +12,14 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({ message }) => 
       <div className="d-flex w-100 justify-content-end mb-3 chat-msg-row user-row">
         <div className="chat-bubble user-bubble px-3 py-2">
           <div className="d-flex align-items-center justify-content-between gap-3 mb-1 bubble-header user-header">
-            <span className="bubble-sender fw-bold">{message.senderName || "Tu"}</span>
+            <span className="bubble-sender fw-bold">{message.senderName || "You"}</span>
             <User size={13} className="bubble-sender-icon text-white-50" />
           </div>
           <p className="mb-1 text-break bubble-text">{message.text}</p>
           <div className="d-flex align-items-center justify-content-end bubble-meta">
+            {message.failed && (
+              <span className="small text-danger me-2">Not sent</span>
+            )}
             <span className="bubble-time">{message.time}</span>
           </div>
         </div>
@@ -32,7 +35,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({ message }) => 
       <div className="chat-bubble server-bubble px-3 py-2">
         <div className="d-flex align-items-center justify-content-between gap-3 mb-1 bubble-header server-header">
           <span className="bubble-sender fw-bold">{message.senderName || "Server"}</span>
-          <span className="badge bg-info-subtle text-info border border-info-subtle px-1 py-0" style={{ fontSize: "11px" }}>CENTRALE</span>
+          <span className="badge bg-info-subtle text-info border border-info-subtle px-1 py-0" style={{ fontSize: "11px" }}>CENTRAL</span>
         </div>
         <p className="mb-1 text-break bubble-text">{message.text}</p>
         <div className="d-flex justify-content-start bubble-meta">
