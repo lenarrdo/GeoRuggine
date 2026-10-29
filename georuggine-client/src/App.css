@@ -91,7 +91,7 @@ html {
   background-color: var(--term-bg-root);
 }
 
-/* Colonna Sinistra Hero */
+/* Left column: hero */
 .auth-hero-pane {
   flex: 0 0 46%;
   position: relative;
@@ -119,7 +119,7 @@ html {
   backdrop-filter: blur(3px);
 }
 
-/* Effetto griglia terminale sullo sfondo */
+/* Terminal grid effect on the background */
 .auth-hero-overlay::after {
   content: "";
   position: absolute;
@@ -182,7 +182,7 @@ html {
   opacity: 0.9;
 }
 
-/* Colonna Destra Form */
+/* Right column: form */
 .auth-form-pane {
   flex: 1;
   background-color: var(--term-bg-root);
@@ -425,7 +425,7 @@ html {
   background-color: var(--term-bg-root);
 }
 
-/* Sidebar a Sinistra */
+/* Left sidebar */
 .chat-sidebar {
   width: 230px;
   background-color: var(--term-bg-sidebar);
@@ -781,13 +781,13 @@ html {
   color: #fca5a5;
 }
 
-/* Container Messaggi */
+/* Messages container */
 .chat-messages-container {
   flex: 1;
   overflow-y: auto;
   background-color: var(--term-bg-chat);
   padding: 24px;
-  /* Pattern terminale sottile */
+  /* Subtle terminal pattern */
   background-image: radial-gradient(
     rgba(56, 189, 248, 0.04) 1px,
     transparent 1px
@@ -803,7 +803,7 @@ html {
   margin: 0 auto;
 }
 
-/* Righe e Bolle Messaggi Shell */
+/* Shell message rows and bubbles */
 .chat-msg-row {
   display: flex;
   width: 100%;
@@ -860,7 +860,7 @@ html {
   margin-bottom: 4px;
 }
 
-/* Bolla Server: Card scura con testo bianco nitido ad alto contrasto */
+/* Server bubble: dark card with crisp, high-contrast white text */
 .server-bubble {
   background-color: #131926 !important;
   color: #ffffff !important;
@@ -908,7 +908,7 @@ html {
   color: #38bdf8;
 }
 
-/* Bolla Utente: Card scura elegante con bordo blu e testo bianco brillante */
+/* User bubble: elegant dark card with a blue border and bright white text */
 .user-bubble {
   background-color: #172235 !important;
   color: #ffffff !important;
@@ -1069,7 +1069,7 @@ html {
   box-shadow: none;
 }
 
-/* Scrollbar Terminale */
+/* Terminal scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

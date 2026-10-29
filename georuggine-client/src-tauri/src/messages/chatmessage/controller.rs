@@ -11,7 +11,7 @@ impl ChatMessageController {
             timestamp: chrono::Utc::now().to_rfc3339(),
         };
         if let Err(e) = state.send_ws_message(ClientIncomingMessage::Text(msg)) {
-            // Invio fallito: chiude task e canale MPSC
+            // Send failed: close tasks and the MPSC channel
             state.disconnect_ws();
             return Err(e);
         }

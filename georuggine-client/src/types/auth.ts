@@ -10,7 +10,7 @@ export interface AuthResult {
 export interface RegisterFormData {
   username: string;
   password: string;
-  confermaPassword: string;
+  confirmPassword: string;
 }
 
 export interface LoginFormData {

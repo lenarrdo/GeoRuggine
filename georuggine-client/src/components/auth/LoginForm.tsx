@@ -33,10 +33,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       <Card.Body>
         <div className="auth-form-header mb-4 border-bottom border-secondary pb-3">
           <Card.Title as="h2" className="h4 fw-bold font-monospace text-light mb-1 auth-title">
-            Accedi al tuo account
+            Sign in to your account
           </Card.Title>
           <Card.Subtitle className="text-secondary small font-monospace auth-subtitle">
-            Inserisci le tue credenziali per continuare
+            Enter your credentials to continue
           </Card.Subtitle>
         </div>
 
@@ -53,7 +53,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         )}
 
         <Form className="auth-form" onSubmit={handleSubmit}>
-          {/* Campo Username */}
+          {/* Username field */}
           <Form.Group className="mb-3" controlId="login-username">
             <Form.Label className="small text-secondary font-monospace mb-1">
               Username
@@ -65,7 +65,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               <Form.Control
                 type="text"
                 className="bg-dark text-light border-secondary font-monospace"
-                placeholder="es. utente_1"
+                placeholder="e.g. user_1"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -75,7 +75,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             </InputGroup>
           </Form.Group>
 
-          {/* Campo Password con Toggle Visibilità */}
+          {/* Password field with visibility toggle */}
           <Form.Group className="mb-4" controlId="login-password">
             <Form.Label className="small text-secondary font-monospace mb-1">
               Password
@@ -99,14 +99,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 className="border-secondary text-secondary"
                 onClick={() => setShowPassword(!showPassword)}
                 tabIndex={-1}
-                title={showPassword ? "Nascondi password" : "Mostra password"}
+                title={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </Button>
             </InputGroup>
           </Form.Group>
 
-          {/* Bottone Accedi */}
+          {/* Sign in button */}
           <Button
             type="submit"
             variant="primary"
@@ -116,23 +116,23 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             {isLoading ? (
               <span className="d-flex align-items-center justify-content-center gap-2">
                 <Spinner animation="border" size="sm" />
-                Accesso in corso...
+                Signing in...
               </span>
             ) : (
-              "Accedi"
+              "Sign in"
             )}
           </Button>
 
-          {/* Link verso Registrazione */}
+          {/* Link to registration */}
           <div className="text-center font-monospace small text-secondary">
-            <span>Non hai un account? </span>
+            <span>Don't have an account? </span>
             <Button
               variant="link"
               className="text-info p-0 font-monospace text-decoration-none fw-semibold"
               onClick={onSwitchToRegister}
               disabled={isLoading}
             >
-              Registrati
+              Sign up
             </Button>
           </div>
         </Form>

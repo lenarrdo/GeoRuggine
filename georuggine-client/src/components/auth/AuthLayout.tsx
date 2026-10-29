@@ -11,7 +11,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
   return (
     <Container fluid className="p-0 vh-100 d-flex auth-container">
       <Row className="g-0 h-100 w-100">
-        {/* Colonna Sinistra: Hero visivo adattivo con sfondo montano e branding */}
+        {/* Left column: adaptive visual hero with mountain background and branding */}
         <Col
           xs={12}
           md={5}
@@ -25,13 +25,13 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
               <div className="auth-brand-icon-wrapper rounded-3 p-2">
                 <MapPin size={28} className="auth-pin-icon" />
               </div>
-              <h1 className="auth-brand-title mb-0">GeoRuggine</h1>
+              <h1 className="auth-brand-title mb-0">GeoRust</h1>
             </div>
-            <p className="auth-brand-tagline mb-0 font-monospace">Traccia. Comunica. Analizza.</p>
+            <p className="auth-brand-tagline mb-0 font-monospace">Track. Communicate. Analyze.</p>
           </div>
         </Col>
 
-        {/* Colonna Destra: Modulo di input adattivo (Login o Registrazione) */}
+        {/* Right column: adaptive input form (Login or Registration) */}
         <Col
           xs={12}
           md={7}

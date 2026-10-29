@@ -8,7 +8,7 @@ pub async fn start_background_tracking(
     coordinates: Vec<(i64, i64)>,
 ) -> Result<(), String> {
     if coordinates.is_empty() {
-        return Err("Nessuna coordinata fornita per il tracking.".to_string());
+        return Err("No coordinates provided for tracking.".to_string());
     }
 
     let state_clone = state.clone();
@@ -20,7 +20,7 @@ pub async fn start_background_tracking(
         loop {
             interval.tick().await;
 
-            // File esaurito: tutte le coordinate sono state inviate, il task termina
+            // File exhausted: every coordinate has been sent, the task ends
             let Some(&(x, y)) = coordinates.get(index) else {
                 break;
             };
@@ -31,12 +31,14 @@ pub async fn start_background_tracking(
                 timestamp: Some(chrono::Utc::now().to_rfc3339()),
             };
 
-            // Invia la posizione sul canale condiviso MPSC verso il Task 1
+            // Send the position on the shared MPSC channel towards Task 1
             if state_clone
                 .send_ws_message(ClientIncomingMessage::Position(pos))
                 .is_err()
             {
-               state_clone.disconnect_ws();
+                // Connection unavailable: close tasks and the MPSC channel
+                state_clone.disconnect_ws();
+                break;
             }
 
             index += 1;
@@ -53,4 +55,3 @@ pub async fn start_background_tracking(
 
     Ok(())
 }
-    

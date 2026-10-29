@@ -3,7 +3,7 @@ import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { AuthResult, UserSession } from "../types/auth";
 import { ChatMessage } from "../types/chat";
 
-/** Normalizza l'errore restituito da Tauri (stringa o Error) in un messaggio leggibile */
+/** Normalizes the error returned by Tauri (string or Error) into a readable message */
 function toErrorMessage(err: unknown, fallback: string): string {
   if (typeof err === "string" && err.trim().length > 0) {
     return err;
@@ -15,7 +15,7 @@ function toErrorMessage(err: unknown, fallback: string): string {
 }
 
 /**
- * Autenticazione: Registrazione nuovo account
+ * Authentication: new account registration
  */
 export async function apiRegister(username: string, password: string): Promise<AuthResult> {
   try {
@@ -23,13 +23,13 @@ export async function apiRegister(username: string, password: string): Promise<A
   } catch (err) {
     return {
       success: false,
-      message: toErrorMessage(err, "Errore durante la registrazione."),
+      message: toErrorMessage(err, "Registration failed."),
     };
   }
 }
 
 /**
- * Autenticazione: Login
+ * Authentication: login
  */
 export async function apiLogin(username: string, password: string): Promise<AuthResult> {
   try {
@@ -37,24 +37,24 @@ export async function apiLogin(username: string, password: string): Promise<Auth
   } catch (err) {
     return {
       success: false,
-      message: toErrorMessage(err, "Errore durante il login."),
+      message: toErrorMessage(err, "Login failed."),
     };
   }
 }
 
 /**
- * Autenticazione: Logout
+ * Authentication: logout
  */
 export async function apiLogout(): Promise<void> {
   try {
     await invoke("logout");
   } catch (err) {
-    throw new Error(toErrorMessage(err, "Errore durante il logout."));
+    throw new Error(toErrorMessage(err, "Logout failed."));
   }
 }
 
 /**
- * Autenticazione: Recupero utente corrente salvato in sessione
+ * Authentication: retrieve the current user stored in the session
  */
 export async function apiGetCurrentUser(): Promise<UserSession | null> {
   try {
@@ -66,18 +66,18 @@ export async function apiGetCurrentUser(): Promise<UserSession | null> {
 }
 
 /**
- * Chat: Invio messaggio di testo al server o destinatario
+ * Chat: send a text message to the server or to a recipient
  */
 export async function apiSendChatMessage(contents: string): Promise<void> {
   try {
     await invoke("send_chat_message", { contents });
   } catch (err) {
-    throw new Error(toErrorMessage(err, "Impossibile inviare il messaggio."));
+    throw new Error(toErrorMessage(err, "Unable to send the message."));
   }
 }
 
 /**
- * Eventi WebSocket: ascolto ricezione messaggi di chat dal server
+ * WebSocket events: listen for chat messages received from the server
  */
 export async function onChatMessageReceived(
   callback: (msg: ChatMessage) => void,
@@ -88,13 +88,13 @@ export async function onChatMessageReceived(
     });
   } catch (err) {
     throw new Error(
-      toErrorMessage(err, "Impossibile ascoltare i messaggi dal server."),
+      toErrorMessage(err, "Unable to listen for messages from the server."),
     );
   }
 }
 
 /**
- * Eventi WebSocket: ascolto della chiusura imprevista della connessione al server
+ * WebSocket events: listen for unexpected disconnections from the server
  */
 export async function onWsDisconnected(callback: () => void): Promise<UnlistenFn> {
   try {
@@ -103,18 +103,18 @@ export async function onWsDisconnected(callback: () => void): Promise<UnlistenFn
     });
   } catch (err) {
     throw new Error(
-      toErrorMessage(err, "Impossibile ascoltare lo stato del server."),
+      toErrorMessage(err, "Unable to listen for the server status."),
     );
   }
 }
 
 /**
- * Posizione: invio delle coordinate al server
+ * Position: send coordinates to the server
  */
 export async function apiSendPosition(content: string): Promise<void> {
   try {
     await invoke("upload_coordinates", { content });
   } catch (err) {
-    throw new Error(toErrorMessage(err, "Impossibile inviare la posizione."));
+    throw new Error(toErrorMessage(err, "Unable to send the position."));
   }
 }

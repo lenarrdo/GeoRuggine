@@ -13,8 +13,8 @@ pub fn run() {
     tauri::Builder::default()
         .manage(app_state)
         // ─────────────────────────────────────────────────────────────
-        // MAIN THREAD: All'atto della chiusura della finestra del client
-        // distrugge immediatamente tutti i task, il canale MPSC e il WebSocket.
+        // MAIN THREAD: when the client window closes, immediately
+        // destroys every task, the MPSC channel and the WebSocket.
         // ─────────────────────────────────────────────────────────────
         .on_window_event(|window, event| {
             match event {
@@ -25,14 +25,14 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
-            // Autenticazione (REST con reqwest)
+            // Authentication (REST via reqwest)
             auth::register,
             auth::login,
             auth::logout,
             auth::get_current_user,
-            // Produttore 1 (UI): invio messaggi di chat
+            // Producer 1 (UI): chat message sending
             messages::send_chat_message,
-            // Produttore 2: caricamento file coordinate
+            // Producer 2: coordinate file upload
             messages::upload_coordinates,
         ])
         .run(tauri::generate_context!())

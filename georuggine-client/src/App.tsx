@@ -38,11 +38,11 @@ export function App() {
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
   const [serverDown, setServerDown] = useState(false);
 
-  // Inizializza la cronologia messaggi vuota
+  // Initialize the message history as empty
   const [messages, setMessages] = useState<UiMessage[]>([]);
 
-  // Registrazione dei listener di eventi Tauri: attivo solo per l'utente loggato
-  // Alla disconnessione o cambio utente, stacca il listener e resetta i messaggi
+  // Tauri event listener registration: only active while a user is logged in.
+  // On disconnect or user change, the listeners are detached and messages reset
   useEffect(() => {
     if (!currentUser) {
       setMessages([]);
@@ -55,7 +55,7 @@ export function App() {
 
     async function setupListeners() {
       try {
-        // Connessione al server caduta mentre l'utente è loggato
+        // Connection to the server lost while the user is logged in
         const fnDisconnect = await onWsDisconnected(() => setServerDown(true));
         if (isCancelled) {
           fnDisconnect();
@@ -63,7 +63,7 @@ export function App() {
           unlistenDisconnect = fnDisconnect;
         }
 
-        // Ascolto nuovi messaggi di chat in arrivo via WebSocket dal server
+        // Listen for new chat messages coming from the server over the WebSocket
         const fn = await onChatMessageReceived((msg: ChatMessage) => {
           const msgDate = msg.timestamp ? new Date(msg.timestamp) : null;
           const timeStr =
@@ -75,7 +75,7 @@ export function App() {
           const senderName = "Server";
 
           setMessages((prev) => {
-            // Prevenzione rigorosa dei duplicati (stesso testo e stesso orario/timestamp)
+            // Strict duplicate prevention (same text and same time/timestamp)
             const alreadyExists = prev.some(
               (m) => !m.isSelf && m.text === msg.contents && m.time === timeStr
             );
@@ -102,7 +102,7 @@ export function App() {
           unlisten = fn;
         }
       } catch {
-        // Listener non registrato: l'app resta utilizzabile ma senza eventi dal server
+        // Listener not registered: the app stays usable but without server events
         setServerDown(true);
       }
     }
@@ -120,7 +120,7 @@ export function App() {
     };
   }, [currentUser]);
 
-  // Gestione Login
+  // Login handling
   const handleLogin = async (data: LoginFormData) => {
     setIsLoading(true);
     setAuthError(null);
@@ -128,7 +128,7 @@ export function App() {
     try {
       const res = await apiLogin(data.username, data.password);
       if (res.success) {
-        setMessages([]); // Reset preventivo di eventuali messaggi residui
+        setMessages([]); // Preventive reset of any leftover messages
         setCurrentUser({ username: data.username });
       } else {
         setAuthError(res.message);
@@ -139,14 +139,14 @@ export function App() {
           ? err
           : err instanceof Error
           ? err.message
-          : "Errore durante il login. Controlla le credenziali.";
+          : "Login failed. Check your credentials.";
       setAuthError(errorMsg);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Gestione Registrazione
+  // Registration handling
   const handleRegister = async (data: RegisterFormData) => {
     setIsLoading(true);
     setAuthError(null);
@@ -154,12 +154,12 @@ export function App() {
     try {
       const regRes = await apiRegister(data.username, data.password);
       if (regRes.success) {
-        // Successo: riporta l'utente al login con messaggio di successo
-        setAuthSuccess("Registrazione avvenuta con successo, ora puoi effettuare il login.");
+        // Success: send the user back to login with a success message
+        setAuthSuccess("Registration successful. You can now sign in.");
         setAuthError(null);
         setAuthView("login");
       } else {
-        // Fallimento: rimane sulla schermata di registrazione e mostra il problema
+        // Failure: stay on the registration screen and show the problem
         setAuthError(regRes.message);
       }
     } catch (err: unknown) {
@@ -168,19 +168,19 @@ export function App() {
           ? err
           : err instanceof Error
           ? err.message
-          : "Errore durante la registrazione.";
+          : "Registration failed.";
       setAuthError(errorMsg);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Gestione Logout: reset completo dello stato utente, cronologia chat ed errori
+  // Logout handling: full reset of user state, chat history and errors
   const handleLogout = async () => {
     try {
       await apiLogout();
     } catch {
-      // Errore lato backend ignorato: la sessione locale viene comunque azzerata nel finally
+      // Backend error ignored: the local session is cleared in the finally block anyway
     } finally {
       setMessages([]);
       setCurrentUser(null);
@@ -192,13 +192,13 @@ export function App() {
     }
   };
 
-  // Invio messaggio di chat
+  // Chat message sending
   const handleSendMessage = async (text: string) => {
     const messageId = `msg-${Date.now()}-${Math.random()}`;
     const newMsg: UiMessage = {
       id: messageId,
       isSelf: true,
-      senderName: currentUser?.username || "Tu",
+      senderName: currentUser?.username || "You",
       text,
       time: formatCurrentTime(),
     };
@@ -211,7 +211,7 @@ export function App() {
       setMessages((prev) =>
         prev.map((m) => (m.id === messageId ? { ...m, failed: true } : m))
       );
-      // Rilancia l'errore: ChatInput ripristina il testo nella barra
+      // Rethrow the error: ChatInput restores the text in the input bar
       throw err;
     }
   };
@@ -224,7 +224,7 @@ export function App() {
     <Container fluid className="app-window-frame vh-100 vw-100 p-0 d-flex overflow-hidden bg-dark">
       <main className="app-main-content flex-grow-1 d-flex overflow-hidden bg-dark">
         {!currentUser ? (
-          /* Schermate di Autenticazione (Login / Registrazione con Split Layout) */
+          /* Authentication screens (Login / Registration with split layout) */
           <AuthLayout>
             {authView === "login" ? (
               <LoginForm
@@ -252,7 +252,7 @@ export function App() {
             )}
           </AuthLayout>
         ) : (
-          /* Schermata Principale Post-Autenticazione: Sidebar & Chat Area */
+          /* Main post-authentication screen: sidebar and chat area */
           <div className="d-flex w-100 h-100 overflow-hidden chat-dashboard-layout">
             <ChatSidebar
               activeTab={activeTab}
@@ -271,13 +271,13 @@ export function App() {
 
       <Modal show={serverDown && !!currentUser} backdrop="static" keyboard={false} centered>
           <Modal.Body className="font-monospace">
-            C'è stato un problema con il server.
+            There was a problem with the server.
             <br />
-            Si perdoni il disagio.
+            We are sorry for the inconvenience.
           </Modal.Body>
         <Modal.Footer>
           <Button variant="primary" onClick={handleLogout}>
-            Torna al login
+            Back to login
           </Button>
         </Modal.Footer>
       </Modal>

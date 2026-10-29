@@ -16,7 +16,7 @@ export function FileUploader({ onFileUploaded }: FileUploaderProps) {
         const file = event.target.files?.[0];
         if (file) {
             if (!file.name.endsWith(".json")) {
-                setStatusMessage({ type: "error", text: "Solo file .json ammessi" });
+                setStatusMessage({ type: "error", text: "Only .json files are allowed" });
                 return;
             }
             setSelectedFile(file);
@@ -38,22 +38,22 @@ export function FileUploader({ onFileUploaded }: FileUploaderProps) {
             setIsUploading(true);
             setStatusMessage(null);
 
-            // Lettura contenuto file
+            // Read the file contents
             const content = await selectedFile.text();
 
-            // Callback al genitore o logica di trasmissione
+            // Callback to the parent or transmission logic
             if (onFileUploaded) {
                 await onFileUploaded(content);
             }
 
-            setStatusMessage({ type: "success", text: "File caricato con successo!" });
+            setStatusMessage({ type: "success", text: "File uploaded successfully!" });
         } catch (err: unknown) {
             const msg =
                 typeof err === "string"
                     ? err
                     : err instanceof Error
                     ? err.message
-                    : "Errore durante il caricamento";
+                    : "Upload failed";
             setStatusMessage({ type: "error", text: msg });
         } finally {
             setIsUploading(false);
@@ -63,7 +63,7 @@ export function FileUploader({ onFileUploaded }: FileUploaderProps) {
     return (
         <div className="p-2 rounded-2 bg-dark border border-secondary font-monospace sidebar-file-uploader">
             <div className="d-flex align-items-center justify-content-between mb-2">
-                <span className="small text-secondary fw-semibold">File Coordinate</span>
+                <span className="small text-secondary fw-semibold">Coordinate File</span>
                 <Upload size={14} className="text-info opacity-75" />
             </div>
 
@@ -83,7 +83,7 @@ export function FileUploader({ onFileUploaded }: FileUploaderProps) {
                     onClick={() => fileInputRef.current?.click()}
                 >
                     <FileText size={14} />
-                    <span>Scegli .json</span>
+                    <span>Choose .json</span>
                 </button>
             ) : (
                 <div className="d-flex flex-column gap-1">
@@ -99,7 +99,7 @@ export function FileUploader({ onFileUploaded }: FileUploaderProps) {
                             type="button"
                             className="btn btn-link text-secondary p-0 border-0"
                             onClick={handleClear}
-                            title="Rimuovi file"
+                            title="Remove file"
                         >
                             <X size={14} />
                         </button>
@@ -119,10 +119,10 @@ export function FileUploader({ onFileUploaded }: FileUploaderProps) {
                         {isUploading ? (
                             <>
                                 <Loader2 size={12} className="spinner-border spinner-border-sm border-0" />
-                                <span>Invio...</span>
+                                <span>Sending...</span>
                             </>
                         ) : (
-                            <span>Carica coordinate</span>
+                            <span>Upload coordinates</span>
                         )}
                     </button>
                 </div>

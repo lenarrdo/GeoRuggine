@@ -18,7 +18,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [confermaPassword, setConfermaPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -29,24 +29,24 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     setValidationError(null);
 
     if (!username.trim()) {
-      setValidationError("Lo username è obbligatorio");
+      setValidationError("Username is required");
       return;
     }
 
     if (password.length < 4) {
-      setValidationError("La password deve contenere almeno 4 caratteri");
+      setValidationError("Password must be at least 4 characters long");
       return;
     }
 
-    if (password !== confermaPassword) {
-      setValidationError("Le password non coincidono");
+    if (password !== confirmPassword) {
+      setValidationError("Passwords do not match");
       return;
     }
 
     await onSubmit({
       username: username.trim(),
       password,
-      confermaPassword,
+      confirmPassword,
     });
   };
 
@@ -57,10 +57,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
       <Card.Body>
         <div className="auth-form-header mb-4 border-bottom border-secondary pb-3">
           <Card.Title as="h2" className="h4 fw-bold font-monospace text-light mb-1 auth-title">
-            Crea il tuo account
+            Create your account
           </Card.Title>
           <Card.Subtitle className="text-secondary small font-monospace auth-subtitle">
-            Compila i campi qui sotto per registrarti
+            Fill in the fields below to sign up
           </Card.Subtitle>
         </div>
 
@@ -71,7 +71,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         )}
 
         <Form className="auth-form" onSubmit={handleSubmit}>
-          {/* Campo Username */}
+          {/* Username field */}
           <Form.Group className="mb-3" controlId="register-username">
             <Form.Label className="small text-secondary font-monospace mb-1">
               Username
@@ -83,7 +83,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
               <Form.Control
                 type="text"
                 className="bg-dark text-light border-secondary font-monospace"
-                placeholder="es. utente_1"
+                placeholder="e.g. user_1"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -93,7 +93,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             </InputGroup>
           </Form.Group>
 
-          {/* Campo Password */}
+          {/* Password field */}
           <Form.Group className="mb-3" controlId="register-password">
             <Form.Label className="small text-secondary font-monospace mb-1">
               Password
@@ -117,17 +117,17 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 className="border-secondary text-secondary"
                 onClick={() => setShowPassword(!showPassword)}
                 tabIndex={-1}
-                title={showPassword ? "Nascondi password" : "Mostra password"}
+                title={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </Button>
             </InputGroup>
           </Form.Group>
 
-          {/* Campo Conferma Password */}
+          {/* Confirm password field */}
           <Form.Group className="mb-4" controlId="register-confirm-password">
             <Form.Label className="small text-secondary font-monospace mb-1">
-              Conferma password
+              Confirm password
             </Form.Label>
             <InputGroup>
               <InputGroup.Text className="bg-dark border-secondary text-secondary">
@@ -137,8 +137,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 type={showConfirmPassword ? "text" : "password"}
                 className="bg-dark text-light border-secondary font-monospace"
                 placeholder="••••••••"
-                value={confermaPassword}
-                onChange={(e) => setConfermaPassword(e.target.value)}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 autoComplete="new-password"
                 disabled={isLoading}
@@ -148,40 +148,40 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 className="border-secondary text-secondary"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 tabIndex={-1}
-                title={showConfirmPassword ? "Nascondi password" : "Mostra password"}
+                title={showConfirmPassword ? "Hide password" : "Show password"}
               >
                 {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </Button>
             </InputGroup>
           </Form.Group>
 
-          {/* Bottone Registrati */}
+          {/* Sign up button */}
           <Button
             type="submit"
             variant="primary"
             className="w-100 py-2 font-monospace fw-semibold shadow-sm mb-3 auth-submit-btn"
-            disabled={isLoading || !username.trim() || !password || !confermaPassword}
+            disabled={isLoading || !username.trim() || !password || !confirmPassword}
           >
             {isLoading ? (
               <span className="d-flex align-items-center justify-content-center gap-2">
                 <Spinner animation="border" size="sm" />
-                Creazione account...
+                Creating account...
               </span>
             ) : (
-              "Registrati"
+              "Sign up"
             )}
           </Button>
 
-          {/* Link verso Login */}
+          {/* Link back to login */}
           <div className="text-center font-monospace small text-secondary">
-            <span>Hai già un account? </span>
+            <span>Already have an account? </span>
             <Button
               variant="link"
               className="text-info p-0 font-monospace text-decoration-none fw-semibold"
               onClick={onSwitchToLogin}
               disabled={isLoading}
             >
-              Accedi
+              Sign in
             </Button>
           </div>
         </Form>

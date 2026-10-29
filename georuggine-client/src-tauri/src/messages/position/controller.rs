@@ -6,23 +6,23 @@ pub struct PositionController;
 
 impl PositionController {
     pub async fn upload_coordinates(state: &AppState, content: &str) -> Result<(), String> {
-        // 0. Verifica preventiva della connessione WebSocket attiva
+        // 0. Upfront check that the WebSocket connection is active
         if !state.is_ws_connected() {
-            return Err("Impossibile avviare il tracciamento: connessione WebSocket al server non attiva. Effettua l'accesso o verifica lo stato della rete.".to_string());
+            return Err("Unable to start tracking: the WebSocket connection to the server is not active. Sign in or check your network status.".to_string());
         }
 
-        // 1. Validazione del formato JSON e deserializzazione in CoordinatePoint
+        // 1. JSON format validation and deserialization into CoordinatePoint
         let points: Vec<CoordinatePoint> = serde_json::from_str(content)
-            .map_err(|e| format!("Il file non contiene un formato JSON valido di coordinate: {e}"))?;
+            .map_err(|e| format!("The file does not contain a valid JSON coordinate format: {e}"))?;
 
         if points.is_empty() {
-            return Err("Il file JSON non contiene alcuna coordinata.".to_string());
+            return Err("The JSON file does not contain any coordinate.".to_string());
         }
 
-        // 2. Mappatura in coordinate (x, y)
+        // 2. Mapping into (x, y) coordinates
         let coordinates: Vec<(i64, i64)> = points.into_iter().map(|p| (p.x, p.y)).collect();
 
-        // 3. Avvio immediato del background tracking con le coordinate ricevute
+        // 3. Immediate start of the background tracking with the received coordinates
         start_background_tracking(state, coordinates).await?;
 
         Ok(())
