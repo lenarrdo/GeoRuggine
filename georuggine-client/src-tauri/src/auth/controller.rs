@@ -43,8 +43,7 @@ impl AuthController {
 
         if let Some(token) = &body.token {
             // 1. Connette la WebSocket: senza chat il login non va a buon fine
-            if let Err(e) = connect_ws_internal(app_handle, state, token).await {
-                eprintln!("[AuthController] Connessione WebSocket fallita: {e}");
+            if connect_ws_internal(app_handle, state, token).await.is_err() {
                 return AuthResult {
                     success: false,
                     message: "Impossibile connettersi. Riprova più tardi.".to_string(),

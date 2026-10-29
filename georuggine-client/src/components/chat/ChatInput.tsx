@@ -64,11 +64,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
         <button
           type="submit"
-          className="btn btn-primary d-flex align-items-center justify-content-center px-3 rounded-2 shadow-sm chat-send-btn"
+          className="btn btn-primary d-flex align-items-center justify-content-center rounded-2 shadow-sm chat-send-btn"
           title="Invia messaggio"
           disabled={disabled || isSending || !text.trim()}
         >
-          <ArrowRight size={18} />
+          <ArrowRight size={18} strokeWidth={2.25} aria-hidden="true" />
         </button>
       </form>
     </div>

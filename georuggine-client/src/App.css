@@ -1034,6 +1034,8 @@ html {
 .chat-send-btn {
   width: 34px;
   height: 34px;
+  padding: 0;
+  flex-shrink: 0;
   border-radius: 6px;
   background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
   color: #ffffff;
@@ -1044,6 +1046,11 @@ html {
   cursor: pointer;
   transition: all 0.15s ease;
   box-shadow: 0 0 10px var(--term-cyan-glow);
+}
+
+.chat-send-btn svg {
+  flex-shrink: 0;
+  display: block;
 }
 
 .chat-send-btn:hover:not(:disabled) {

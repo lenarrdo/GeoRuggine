@@ -36,22 +36,14 @@ pub async fn connect_ws_internal(
     let state_for_send = state.clone();
     let app_for_send = app_handle.clone();
     let send_handle = tokio::spawn(async move {
-        println!("[WS Client] Task 1 (Trasmissione) avviato");
         while let Some(msg) = rx.recv().await {
-            match serde_json::to_string(&msg) {
-                Ok(json) => {
-                    if let Err(e) = ws_sink.send(Message::Text(json.into())).await {
-                        eprintln!("[WS Client] Errore invio messaggio su socket: {e}");
-                        break;
-                    }
-                }
-                Err(e) => {
-                    eprintln!("[WS Client] Errore serializzazione JSON: {e}");
+            if let Ok(json) = serde_json::to_string(&msg) {
+                if ws_sink.send(Message::Text(json.into())).await.is_err() {
+                    break;
                 }
             }
         }
         let _ = ws_sink.close().await;
-        println!("[WS Client] Task 1 (Trasmissione) concluso");
         // Chiusura imprevista: avvisa il frontend (non avviene su logout, dove il task viene abortito)
         let _ = app_for_send.emit("ws-disconnected", ());
         state_for_send.disconnect_ws();
@@ -62,30 +54,20 @@ pub async fn connect_ws_internal(
     let app_clone = app_handle.clone();
     let state_for_recv = state.clone();
     let recv_handle = tokio::spawn(async move {
-        println!("[WS Client] Task 2 (Ricezione) avviato");
         while let Some(msg_result) = ws_stream.next().await {
             match msg_result {
                 Ok(Message::Text(text)) => {
                     if let Ok(chat) = serde_json::from_str::<TextMessage>(&text) {
                         let _ = app_clone.emit("chat-message-received", chat);
-                    } else {
-                        eprintln!("[WS Client] Ricevuto messaggio di testo non conforme a TextMessage: {text}");
                     }
                 }
-                Ok(Message::Close(close_frame)) => {
-                    println!("[WS Client] Socket chiuso dal server: {close_frame:?}");
-                    break;
-                }
+                Ok(Message::Close(_)) => break,
                 Ok(Message::Ping(_)) => {}
-                Err(e) => {
-                    eprintln!("[WS Client] Errore ricezione socket: {e}");
-                    break;
-                }
+                Err(_) => break,
                 _ => {}
             }
         }
 
-        println!("[WS Client] Task 2 (Ricezione) concluso");
         // Chiusura imprevista: avvisa il frontend (non avviene su logout, dove il task viene abortito)
         let _ = app_clone.emit("ws-disconnected", ());
         state_for_recv.disconnect_ws();

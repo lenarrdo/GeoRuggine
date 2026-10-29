@@ -14,20 +14,15 @@ pub async fn start_background_tracking(
     let state_clone = state.clone();
 
     let task_handle = tokio::spawn(async move {
-        println!(
-            "[Tracking] Task 3 (Tracking periodico) avviato con {} coordinate",
-            coordinates.len()
-        );
         let mut interval = tokio::time::interval(Duration::from_secs(30));
         let mut index = 0;
 
         loop {
             interval.tick().await;
 
-            let (x, y) = if index < coordinates.len() {
-                coordinates[index]
-            } else {
-                *coordinates.last().unwrap_or(&(45000, 7600))
+            // File esaurito: tutte le coordinate sono state inviate, il task termina
+            let Some(&(x, y)) = coordinates.get(index) else {
+                break;
             };
 
             let pos = PositionUpdate {
@@ -37,21 +32,14 @@ pub async fn start_background_tracking(
             };
 
             // Invia la posizione sul canale condiviso MPSC verso il Task 1
-            if let Err(e) = state_clone.send_ws_message(ClientIncomingMessage::Position(pos.clone())) {
-                eprintln!(
-                    "[Tracking] Connessione non disponibile ({e}). Nuovo tentativo tra 30s..."
-                );
-                continue;
+            if state_clone
+                .send_ws_message(ClientIncomingMessage::Position(pos))
+                .is_err()
+            {
+               state_clone.disconnect_ws();
             }
 
             index += 1;
-
-            println!(
-                "[Tracking] Inviata posizione ({}/{}): x={x}, y={y}, time={:?}",
-                index.min(coordinates.len()),
-                coordinates.len(),
-                pos.timestamp
-            );
         }
     })
     .abort_handle();

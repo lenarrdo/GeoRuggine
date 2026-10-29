@@ -19,7 +19,6 @@ pub fn run() {
         .on_window_event(|window, event| {
             match event {
                 tauri::WindowEvent::CloseRequested { .. } | tauri::WindowEvent::Destroyed => {
-                    println!("[Main Thread] Chiusura finestra rilevata: distruzione immediata canali, socket e task...");
                     window.state::<AppState>().disconnect_ws();
                 }
                 _ => {}

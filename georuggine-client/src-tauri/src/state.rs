@@ -68,7 +68,6 @@ impl AppState {
         if let Ok(mut guard) = self.tracking_abort.lock() {
             if let Some(handle) = guard.take() {
                 handle.abort();
-                println!("[Tracking] Task tracking abortito e distrutto");
             }
         }
 
@@ -76,7 +75,6 @@ impl AppState {
         if let Ok(mut guard) = self.send_abort.lock() {
             if let Some(handle) = guard.take() {
                 handle.abort();
-                println!("[WS Client] Task 1 (Trasmissione) abortito e distrutto");
             }
         }
 
@@ -84,14 +82,12 @@ impl AppState {
         if let Ok(mut guard) = self.recv_abort.lock() {
             if let Some(handle) = guard.take() {
                 handle.abort();
-                println!("[WS Client] Task 2 (Ricezione) abortito e distrutto");
             }
         }
 
         // 4. Distrugge il canale MPSC rilasciando il Sender
         if let Ok(mut tx_guard) = self.ws_tx.lock() {
             *tx_guard = None;
-            println!("[WS Client] Canale MPSC azzerato e deallocato");
         }
     }
 }

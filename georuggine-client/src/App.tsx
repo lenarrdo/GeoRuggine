@@ -9,7 +9,6 @@ import {
   apiLogin,
   apiRegister,
   apiLogout,
-  apiGetCurrentUser,
   apiSendChatMessage,
   onChatMessageReceived,
   onWsDisconnected,
@@ -41,17 +40,6 @@ export function App() {
 
   // Inizializza la cronologia messaggi vuota
   const [messages, setMessages] = useState<UiMessage[]>([]);
-
-  // Controlla se c'è già una sessione attiva all'avvio
-  useEffect(() => {
-    async function checkExistingSession() {
-      const session = await apiGetCurrentUser();
-      if (session) {
-        setCurrentUser(session);
-      }
-    }
-    checkExistingSession();
-  }, []);
 
   // Registrazione dei listener di eventi Tauri: attivo solo per l'utente loggato
   // Alla disconnessione o cambio utente, stacca il listener e resetta i messaggi
@@ -282,10 +270,11 @@ export function App() {
       </main>
 
       <Modal show={serverDown && !!currentUser} backdrop="static" keyboard={false} centered>
-        <Modal.Body className="font-monospace">
-          C'é stato un problema con il server.
-          Si perdoni il disagio.
-        </Modal.Body>
+          <Modal.Body className="font-monospace">
+            C'è stato un problema con il server.
+            <br />
+            Si perdoni il disagio.
+          </Modal.Body>
         <Modal.Footer>
           <Button variant="primary" onClick={handleLogout}>
             Torna al login

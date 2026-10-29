@@ -22,11 +22,6 @@ impl PositionController {
         // 2. Mappatura in coordinate (x, y)
         let coordinates: Vec<(i64, i64)> = points.into_iter().map(|p| (p.x, p.y)).collect();
 
-        println!(
-            "[PositionController] Elaborate con successo {} coordinate dal file caricato",
-            coordinates.len()
-        );
-
         // 3. Avvio immediato del background tracking con le coordinate ricevute
         start_background_tracking(state, coordinates).await?;
 
