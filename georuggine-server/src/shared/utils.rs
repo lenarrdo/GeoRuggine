@@ -1,5 +1,5 @@
 use chrono::Duration as ChronoDuration;
-use std::time::Duration as StdDuration;
+use std::{fs, path::Path, time::Duration as StdDuration};
 use tokio::sync::mpsc::Sender;
 
 use crate::tui::AppEvent;
@@ -18,4 +18,15 @@ pub async fn send_app_events(events: Vec<AppEvent>, tx: &Sender<AppEvent>) {
     for event in events {
         tx.send(event).await.unwrap();
     }
+}
+
+pub fn ensure_dir_exists(url: &str) -> std::io::Result<()> {
+    let path = Path::new(url);
+    if let Some(parent) = path.parent()
+        && !parent.as_os_str().is_empty()
+    {
+        fs::create_dir_all(parent)?;
+    }
+
+    Ok(())
 }

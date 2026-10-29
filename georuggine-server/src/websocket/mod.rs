@@ -40,14 +40,15 @@ pub async fn ws_handler(
     State(state): State<Arc<AppState>>,
     ws: WebSocketUpgrade,
 ) -> Result<impl IntoResponse, (StatusCode, Json<WsResponse>)> {
-    let claims = token_service::validate_jwt(&params.token).map_err(|_| {
-        (
-            StatusCode::UNAUTHORIZED,
-            Json(WsResponse {
-                message: "WebSockets can be only opened by authorized users.".to_string(),
-            }),
-        )
-    })?;
+    let claims =
+        token_service::validate_jwt(&params.token, &state.config.jwt_secret).map_err(|_| {
+            (
+                StatusCode::UNAUTHORIZED,
+                Json(WsResponse {
+                    message: "WebSockets can be only opened by authorized users.".to_string(),
+                }),
+            )
+        })?;
 
     if state.clients.list.contains_key(&claims.user_id) {
         return Err((

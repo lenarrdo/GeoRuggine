@@ -2,15 +2,16 @@ use sqlx::{
     Pool, Sqlite,
     sqlite::{SqliteConnectOptions, SqlitePoolOptions},
 };
-use std::{fs, path::Path, str::FromStr};
+use std::str::FromStr;
 
-const DATA_DIR: &str = "data";
-const DB_NAME: &str = "georust.sqlite";
+use crate::shared::utils;
 
-pub async fn init(reset_tables: bool) -> Result<Pool<Sqlite>, Box<dyn std::error::Error>> {
-    fs::create_dir_all(DATA_DIR)?;
-    let db_path = Path::new(DATA_DIR).join(DB_NAME);
-    let options = SqliteConnectOptions::from_str(&format!("sqlite://{}", db_path.display()))?
+pub async fn init(
+    db_path: &str,
+    reset_tables: bool,
+) -> Result<Pool<Sqlite>, Box<dyn std::error::Error>> {
+    utils::ensure_dir_exists(db_path)?;
+    let options = SqliteConnectOptions::from_str(db_path)?
         .create_if_missing(true)
         .foreign_keys(true);
 

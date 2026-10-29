@@ -57,6 +57,7 @@ impl AuthService {
         db_pool: &SqlitePool,
         username: &str,
         password: &str,
+        jwt_secret: &str,
     ) -> Result<String, LoginError> {
         let username = username.trim();
         let password = password.trim();
@@ -81,7 +82,7 @@ impl AuthService {
             })
             .map(|_| ())?;
 
-        let token = token_service::generate_jwt(user.id, username)
+        let token = token_service::generate_jwt(user.id, username, jwt_secret)
             .map_err(|_| LoginError::InternalError("Couldn't Generate Token.".to_string()))?;
 
         Ok(token)

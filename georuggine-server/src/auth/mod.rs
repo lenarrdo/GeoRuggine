@@ -80,7 +80,7 @@ pub async fn handle_login(
     let username = body.username.as_deref().unwrap_or("");
     let password = body.password.as_deref().unwrap_or("");
 
-    match AuthService::login(&state.db, username, password).await {
+    match AuthService::login(&state.db, username, password, &state.config.jwt_secret).await {
         Ok(token) => Ok((
             StatusCode::OK,
             Json(AuthResponse {

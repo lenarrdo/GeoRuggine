@@ -3,6 +3,7 @@
 
 # ignore database (for now)
 *.sqlite
+*.db
 
 # direnv
 .envrc

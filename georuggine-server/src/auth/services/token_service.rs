@@ -2,7 +2,6 @@ use chrono::{Duration, Local};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 
-const JWT_SECRET: &[u8] = b"super0-secretW-fleet0-key";
 const TOKEN_DURATION: Duration = Duration::hours(24);
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -13,7 +12,11 @@ pub struct Claims {
     pub iat: usize,
 }
 
-pub fn generate_jwt(user_id: u32, username: &str) -> Result<String, jsonwebtoken::errors::Error> {
+pub fn generate_jwt(
+    user_id: u32,
+    username: &str,
+    jwt_secret: &str,
+) -> Result<String, jsonwebtoken::errors::Error> {
     let now = Local::now();
     let expire = now + TOKEN_DURATION;
 
@@ -27,14 +30,14 @@ pub fn generate_jwt(user_id: u32, username: &str) -> Result<String, jsonwebtoken
     encode(
         &Header::default(),
         &claims,
-        &EncodingKey::from_secret(JWT_SECRET),
+        &EncodingKey::from_secret(jwt_secret.as_bytes()),
     )
 }
 
-pub fn validate_jwt(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
+pub fn validate_jwt(token: &str, jwt_secret: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
     let token_data = decode::<Claims>(
         token,
-        &DecodingKey::from_secret(JWT_SECRET),
+        &DecodingKey::from_secret(jwt_secret.as_bytes()),
         &Validation::default(), // automatically validates expiration date
     )?;
 
