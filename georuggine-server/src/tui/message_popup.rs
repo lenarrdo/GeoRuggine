@@ -60,7 +60,6 @@ impl MessagePopup {
         }
 
         match (key.modifiers, key.code) {
-            (KeyModifiers::NONE, KeyCode::Char(c)) => self.type_char(c),
             (KeyModifiers::NONE, KeyCode::Backspace) => self.delete_char(),
             (KeyModifiers::CONTROL, KeyCode::Char('w')) => self.delete_word(),
             (KeyModifiers::NONE, KeyCode::Left) => self.move_cursor_left(),
@@ -68,6 +67,7 @@ impl MessagePopup {
             (KeyModifiers::NONE, KeyCode::End) => self.move_cursor_end(),
             (KeyModifiers::NONE, KeyCode::Home) => self.move_cursor_beginning(),
             (KeyModifiers::NONE, KeyCode::Esc) => self.hide(),
+            (_, KeyCode::Char(c)) => self.type_char(c),
             _ => {}
         };
 
