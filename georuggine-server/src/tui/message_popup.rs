@@ -24,10 +24,10 @@ impl MessagePopup {
         frame.render_widget(Clear, centered_area);
 
         let popup_inner_width = (centered_area.width.saturating_sub(2)) as usize;
-        let scroll_x = if self.cursor_position >= popup_inner_width {
-            (self.cursor_position - popup_inner_width + 1) as u16
-        } else {
+        let scroll_x = if self.cursor_position < popup_inner_width || popup_inner_width == 0 {
             0
+        } else {
+            (self.cursor_position - popup_inner_width + 1) as u16
         };
 
         let contents: String = self.input.iter().collect();

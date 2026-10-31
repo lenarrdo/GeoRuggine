@@ -8,6 +8,8 @@ use ratatui::{
     widgets::{Block, List, ListItem},
 };
 
+const MAX_STORED_MESSAGES: usize = 50;
+
 struct LogMessage {
     contents: String,
     timestamp: DateTime<Utc>,
@@ -42,10 +44,6 @@ impl LogsTab {
     pub fn render(&mut self, block: Block, frame: &mut Frame, area: Rect) {
         let box_height = block.inner(area).height as usize;
 
-        if self.messages.len() > box_height {
-            self.messages.pop_front();
-        }
-
         let skip_count = self.messages.len().saturating_sub(box_height);
         let messages: Vec<ListItem> = self
             .messages
@@ -60,5 +58,8 @@ impl LogsTab {
 
     pub fn add_message(&mut self, msg: String) {
         self.messages.push_back(LogMessage::new(msg));
+        if self.messages.len() > MAX_STORED_MESSAGES {
+            self.messages.pop_front();
+        }
     }
 }

@@ -121,17 +121,17 @@ impl UserList {
     }
 
     pub fn select_prev(&mut self) {
-        let Some(curr_idx) = self.state.selected() else {
-            return;
-        };
+        if let Some(curr_idx) = self.state.selected()
+            && !self.users.is_empty()
+        {
+            let prev_idx = if curr_idx == 0 {
+                self.users.len() - 1
+            } else {
+                curr_idx - 1
+            };
 
-        let prev_idx = if curr_idx == 0 {
-            self.users.len() - 1
-        } else {
-            curr_idx - 1
-        };
-
-        self.state.select(Some(prev_idx));
+            self.state.select(Some(prev_idx));
+        }
     }
 
     pub fn select_first(&mut self) {

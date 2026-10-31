@@ -79,7 +79,9 @@ impl UserInfoPopup {
             }
             KeyCode::Char('l') | KeyCode::Right => self.selected_tab = (self.selected_tab + 1) % 3,
             KeyCode::Char('h') | KeyCode::Left => self.selected_tab = (self.selected_tab + 2) % 3,
-            _ => {}
+            _ => {
+                return (self.user.id, None);
+            }
         };
 
         (self.user.id, TimeFrame::from_index(self.selected_tab))

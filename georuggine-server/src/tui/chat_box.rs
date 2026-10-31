@@ -9,6 +9,8 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
 };
 
+use crate::shared::utils::SERVER_ID;
+
 #[derive(Default, Clone)]
 pub struct UIMessage {
     timestamp: DateTime<Utc>,
@@ -83,7 +85,7 @@ impl ChatBox {
 
             let horizontal_layout = Layout::default()
                 .direction(Direction::Horizontal)
-                .constraints(if msg.sender == 0 {
+                .constraints(if msg.sender == SERVER_ID {
                     [Constraint::Min(0), Constraint::Length(text_width)]
                 } else {
                     [Constraint::Length(text_width), Constraint::Min(0)]
@@ -94,12 +96,12 @@ impl ChatBox {
 
             let bubble_block = Block::default()
                 .borders(Borders::ALL)
-                .style(if msg.sender == 0 {
+                .style(if msg.sender == SERVER_ID {
                     Style::default().fg(Color::Cyan)
                 } else {
                     Style::default().fg(Color::Gray)
                 })
-                .title(if msg.sender == 0 {
+                .title(if msg.sender == SERVER_ID {
                     Line::from(formatted_timestamp).right_aligned()
                 } else {
                     Line::from(formatted_timestamp).left_aligned()
@@ -107,7 +109,7 @@ impl ChatBox {
 
             let paragraph = Paragraph::new(text).block(bubble_block);
 
-            let position = if msg.sender == 0 { 1 } else { 0 };
+            let position = if msg.sender == SERVER_ID { 1 } else { 0 };
             frame.render_widget(paragraph, horizontal_layout[position]);
         }
 

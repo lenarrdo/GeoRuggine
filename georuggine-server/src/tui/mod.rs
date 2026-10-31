@@ -7,7 +7,9 @@ pub mod user_list;
 use std::{sync::Arc, time::Duration};
 
 use chrono::{DateTime, Utc};
-use crossterm::event::{Event as CrosstermEvent, EventStream, KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{
+    Event as CrosstermEvent, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
+};
 use futures::StreamExt;
 use ratatui::{
     DefaultTerminal, Frame,
@@ -113,7 +115,7 @@ impl App {
             let mut interval = tokio::time::interval(Duration::from_secs(1));
             loop {
                 interval.tick().await;
-                tx.send(AppEvent::Tick).await.unwrap();
+                let _ = tx.send(AppEvent::Tick).await;
             }
         });
 
@@ -122,11 +124,9 @@ impl App {
 
             tokio::select! {
                 Some(Ok(crossterm_event)) = reader.next() => {
-                    match crossterm_event {
-                        CrosstermEvent::Key(key) => self.handle_key(key).await,
-                        _ => {}
+                    if let CrosstermEvent::Key(key) = crossterm_event && key.kind == KeyEventKind::Press {
+                        self.handle_key(key).await
                     }
-
                 }
                 Some(app_event) = self.rx.recv() => {
                     match app_event {
@@ -137,12 +137,7 @@ impl App {
                         AppEvent::UserStopped(user_id) => self.user_list.set_status(user_id, UserStatus::Still),
                         AppEvent::LogMessage(msg) => self.logs_tab.add_message(msg),
                         AppEvent::Tick => self.user_list.scan_inactive(),
-                        AppEvent::NewMessage((sender_id, text_msg)) => {
-                            if let Some(selected_user) = self.user_list.get_hovered_user() && (selected_user.id == sender_id || sender_id == 0) {
-                                let date_time: DateTime<Utc> = text_msg.timestamp.parse().unwrap_or(Utc::now());
-                                self.chat_box.messages.push(UIMessage::new(sender_id, &text_msg.contents, date_time));
-                            }
-                        },
+                        AppEvent::NewMessage((sender_id, text_msg)) => self.update_chat_box(sender_id, text_msg),
                     }
                 }
             }
@@ -156,36 +151,30 @@ impl App {
             let Some(msg) = self.message_popup.handle_key(key) else {
                 return;
             };
+            let text_msg = TextMessage::new(msg.clone());
 
             let previously_selected = self.user_list.clear_selected_users();
-            for user_id in previously_selected {
-                if let Err(e) = self.state.clients.send_one(user_id, &msg).await {
-                    self.state.tx.send(AppEvent::LogMessage(e)).await.unwrap();
+            if previously_selected.is_empty() {
+                self.logs_tab
+                    .add_message("You didn't select any user. No messages were sent.".to_string());
+                return;
+            }
+
+            for receiver_id in previously_selected {
+                if let Err(e) = self.state.clients.send_one(receiver_id, &msg).await {
+                    self.logs_tab.add_message(e);
+                    continue;
                 }
 
-                let text_msg = TextMessage::new(msg.clone());
-
-                if let Some(journey_id) = self.state.clients.get_journey_id(user_id) {
+                if let Some(journey_id) = self.state.clients.get_journey_id(receiver_id) {
                     let res = TextMessageRepository::new(self.state.db.clone())
-                        .save_message(SERVER_ID, user_id, &journey_id, &text_msg)
+                        .save_message(SERVER_ID, receiver_id, &journey_id, &text_msg)
                         .await;
-                    self.state
-                        .tx
-                        .send(AppEvent::LogMessage(format!("{res:?}")))
-                        .await
-                        .unwrap();
-                }
-
-                if let Some(hovered_user) = self.user_list.get_hovered_user()
-                    && hovered_user.id == user_id
-                {
-                    self.state
-                        .tx
-                        .send(AppEvent::NewMessage((SERVER_ID, text_msg)))
-                        .await
-                        .unwrap();
+                    self.logs_tab.add_message(format!("{res:?}"));
                 }
             }
+
+            self.update_chat_box(SERVER_ID, text_msg);
 
             return;
         } else if self.user_info_popup.visible {
@@ -301,6 +290,17 @@ impl App {
                 .into_iter()
                 .map(|msg| UIMessage::new(msg.sender_id, &msg.contents, msg.timestamp))
                 .collect()
+        }
+    }
+
+    fn update_chat_box(&mut self, sender_id: u32, text_msg: TextMessage) {
+        if let Some(hovered_user) = self.user_list.get_hovered_user()
+            && (hovered_user.id == sender_id || sender_id == SERVER_ID)
+        {
+            let date_time: DateTime<Utc> = text_msg.timestamp.parse().unwrap_or(Utc::now());
+            self.chat_box
+                .messages
+                .push(UIMessage::new(sender_id, &text_msg.contents, date_time));
         }
     }
 }
