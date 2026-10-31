@@ -6,6 +6,7 @@ pub mod user_list;
 
 use std::{sync::Arc, time::Duration};
 
+use chrono::{DateTime, Utc};
 use crossterm::event::{Event as CrosstermEvent, EventStream, KeyCode, KeyEvent, KeyModifiers};
 use futures::StreamExt;
 use ratatui::{
@@ -18,8 +19,11 @@ use tokio::sync::mpsc::Receiver;
 
 use crate::{
     auth::user_repository::UserEntity,
-    messages::{position::repository::PositionRepository, text::TextMessage},
-    shared::app_state::AppState,
+    messages::{
+        position::repository::PositionRepository,
+        text::{TextMessage, repository::TextMessageRepository},
+    },
+    shared::{app_state::AppState, utils::SERVER_ID},
     tui::{
         chat_box::{ChatBox, UIMessage},
         logs_tab::LogsTab,
@@ -49,13 +53,13 @@ impl TimeFrame {
 }
 
 pub enum AppEvent {
-    UserRegistered(User),
+    UserRegistered((u32, String)),
     UserConnected(u32),
     UserDisconnected(u32),
     UserMoving(u32),
     UserStopped(u32),
     LogMessage(String),
-    NewMessage(UIMessage),
+    NewMessage((u32, TextMessage)),
     Tick,
 }
 
@@ -126,16 +130,17 @@ impl App {
                 }
                 Some(app_event) = self.rx.recv() => {
                     match app_event {
-                        AppEvent::UserRegistered(user) => self.user_list.add_user(user),
+                        AppEvent::UserRegistered((user_id, username)) => self.user_list.add_user(User::new(user_id, &username)),
                         AppEvent::UserConnected(user_id) => self.user_list.set_status(user_id, UserStatus::Still),
                         AppEvent::UserDisconnected(user_id) => self.user_list.set_status(user_id, UserStatus::Disconnected),
                         AppEvent::UserMoving(user_id) => self.user_list.set_status(user_id, UserStatus::Moving),
                         AppEvent::UserStopped(user_id) => self.user_list.set_status(user_id, UserStatus::Still),
                         AppEvent::LogMessage(msg) => self.logs_tab.add_message(msg),
                         AppEvent::Tick => self.user_list.scan_inactive(),
-                        AppEvent::NewMessage(msg) => {
-                            if let Some(selected_user) = self.user_list.get_hovered_user() && (selected_user.id == msg.sender || msg.sender == 0) {
-                                self.chat_box.messages.push(msg);
+                        AppEvent::NewMessage((sender_id, text_msg)) => {
+                            if let Some(selected_user) = self.user_list.get_hovered_user() && (selected_user.id == sender_id || sender_id == 0) {
+                                let date_time: DateTime<Utc> = text_msg.timestamp.parse().unwrap_or(Utc::now());
+                                self.chat_box.messages.push(UIMessage::new(sender_id, &text_msg.contents, date_time));
                             }
                         },
                     }
@@ -155,24 +160,32 @@ impl App {
             let previously_selected = self.user_list.clear_selected_users();
             for user_id in previously_selected {
                 if let Err(e) = self.state.clients.send_one(user_id, &msg).await {
+                    self.state.tx.send(AppEvent::LogMessage(e)).await.unwrap();
+                }
+
+                let text_msg = TextMessage::new(msg.clone());
+
+                if let Some(journey_id) = self.state.clients.get_journey_id(user_id) {
+                    let res = TextMessageRepository::new(self.state.db.clone())
+                        .save_message(SERVER_ID, user_id, &journey_id, &text_msg)
+                        .await;
                     self.state
                         .tx
-                        .send(AppEvent::LogMessage(format!(
-                            "Couldn't send message to {user_id}: {e}"
-                        )))
+                        .send(AppEvent::LogMessage(format!("{res:?}")))
+                        .await
+                        .unwrap();
+                }
+
+                if let Some(hovered_user) = self.user_list.get_hovered_user()
+                    && hovered_user.id == user_id
+                {
+                    self.state
+                        .tx
+                        .send(AppEvent::NewMessage((SERVER_ID, text_msg)))
                         .await
                         .unwrap();
                 }
             }
-
-            self.state
-                .tx
-                .send(AppEvent::NewMessage(UIMessage::new(
-                    0,
-                    TextMessage::new(msg.clone()),
-                )))
-                .await
-                .unwrap();
 
             return;
         } else if self.user_info_popup.visible {
@@ -200,16 +213,14 @@ impl App {
                 KeyCode::Char('k') | KeyCode::Up => {
                     self.user_list.select_prev();
                     if let Some(user) = self.user_list.get_hovered_user() {
-                        self.chat_box.messages =
-                            self.state.clients.get_messages(user.id).unwrap_or_default();
+                        self.chat_box.messages = self.load_user_messages(user.id).await;
                     }
                 }
                 KeyCode::Char('K') => self.chat_box.scroll_up(),
                 KeyCode::Char('j') | KeyCode::Down => {
                     self.user_list.select_next();
                     if let Some(user) = self.user_list.get_hovered_user() {
-                        self.chat_box.messages =
-                            self.state.clients.get_messages(user.id).unwrap_or_default();
+                        self.chat_box.messages = self.load_user_messages(user.id).await;
                     }
                 }
                 KeyCode::Char('J') => self.chat_box.scroll_down(),
@@ -272,5 +283,24 @@ impl App {
 
         self.message_popup
             .render(rounded_block("New Message"), frame);
+    }
+
+    async fn load_user_messages(&self, user_id: u32) -> Vec<UIMessage> {
+        let Some(journey_id) = self.state.clients.get_journey_id(user_id) else {
+            return vec![];
+        };
+
+        let res = TextMessageRepository::new(self.state.db.clone())
+            .get_messages(&journey_id)
+            .await;
+        if let Err(e) = res {
+            vec![UIMessage::new(420, &e.to_string(), Utc::now())]
+        } else {
+            let message_rows = res.unwrap();
+            message_rows
+                .into_iter()
+                .map(|msg| UIMessage::new(msg.sender_id, &msg.contents, msg.timestamp))
+                .collect()
+        }
     }
 }

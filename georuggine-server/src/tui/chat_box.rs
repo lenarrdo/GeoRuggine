@@ -9,8 +9,6 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
 };
 
-use crate::messages::text::TextMessage;
-
 #[derive(Default, Clone)]
 pub struct UIMessage {
     timestamp: DateTime<Utc>,
@@ -25,12 +23,11 @@ impl Display for UIMessage {
 }
 
 impl UIMessage {
-    pub fn new(sender: u32, msg: TextMessage) -> Self {
-        let date_time = msg.timestamp.parse().unwrap_or(Utc::now());
+    pub fn new(sender: u32, contents: &str, timestamp: DateTime<Utc>) -> Self {
         UIMessage {
             sender,
-            timestamp: date_time,
-            contents: msg.contents,
+            timestamp: timestamp,
+            contents: contents.to_owned(),
         }
     }
 }
@@ -42,26 +39,6 @@ pub struct ChatBox {
 }
 
 impl ChatBox {
-    pub fn sample() -> Self {
-        let mut msgs = vec![];
-        for i in 0..15 {
-            let id = i % 2;
-            let mut contents = "Hi from ".to_string();
-            contents.push_str(if id == 0 { "server" } else { "user" });
-            msgs.push(UIMessage::new(
-                id,
-                TextMessage {
-                    contents: contents,
-                    timestamp: Utc::now().to_string(),
-                },
-            ));
-        }
-        ChatBox {
-            messages: msgs,
-            scroll_offset: 0usize,
-        }
-    }
-
     pub fn render(&mut self, block: Block, frame: &mut Frame, area: Rect) {
         let inner_area = block.inner(area);
         frame.render_widget(block, area);

@@ -23,10 +23,13 @@ pub async fn init(
     let mut tx = pool.begin().await?;
 
     if reset_tables {
+        sqlx::query("DROP TABLE IF EXISTS users")
+            .execute(&mut *tx)
+            .await?;
         sqlx::query("DROP TABLE IF EXISTS positions")
             .execute(&mut *tx)
             .await?;
-        sqlx::query("DROP TABLE IF EXISTS users")
+        sqlx::query("DROP TABLE IF EXISTS messages")
             .execute(&mut *tx)
             .await?;
     }
@@ -50,6 +53,21 @@ pub async fn init(
             lon REAL NOT NULL,
             timestamp DATETIME NOT NULL,
             FOREIGN KEY(user_id) REFERENCES users(id)
+        );",
+    )
+    .execute(&mut *tx)
+    .await?;
+
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS messages (
+            message_id INTEGER PRIMARY KEY,
+            sender_id INTEGER NOT NULL,
+            receiver_id INTEGER,
+            journey_id TEXT NOT NULL,
+            timestamp DATETIME NOT NULL,
+            contents TEXT
+            -- FOREIGN KEY(sender_id) REFERENCES users(id)
+            -- FOREIGN KEY(receiver_id) REFERENCES users(id)
         );",
     )
     .execute(&mut *tx)

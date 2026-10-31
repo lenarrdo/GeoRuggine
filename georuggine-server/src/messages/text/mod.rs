@@ -1,3 +1,5 @@
+pub mod repository;
+
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 

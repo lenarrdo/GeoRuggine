@@ -18,10 +18,15 @@ use tokio::sync::mpsc;
 use crate::{
     auth::auth_service::AuthService,
     messages::{
-        ClientIncomingMessage, position::repository::PositionRepository, text::TextMessage,
+        ClientIncomingMessage,
+        position::repository::PositionRepository,
+        text::{TextMessage, repository::TextMessageRepository},
     },
-    shared::{app_state::AppState, utils},
-    tui::{AppEvent, chat_box::UIMessage},
+    shared::{
+        app_state::AppState,
+        utils::{self, SERVER_ID},
+    },
+    tui::AppEvent,
     websocket::{
         clients::ConnectedClient,
         dto::{WsParams, WsResponse},
@@ -151,13 +156,20 @@ pub async fn process_message(
                 utils::send_app_events(
                     vec![
                         AppEvent::LogMessage(log_msg),
-                        AppEvent::NewMessage(UIMessage::new(user_id, text_msg.clone())),
+                        AppEvent::NewMessage((user_id, text_msg.clone())),
                     ],
                     &state.tx,
                 )
                 .await;
 
-                state.clients.save_client_message(user_id, text_msg);
+                if let Some(journey_id) = state.clients.get_journey_id(user_id) {
+                    let res = TextMessageRepository::new(state.db.clone())
+                        .save_message(user_id, SERVER_ID, &journey_id, &text_msg)
+                        .await;
+                    if let Err(e) = res {
+                        let _ = state.tx.send(AppEvent::LogMessage(e.to_string())).await;
+                    }
+                }
             }
             Err(_) => {
                 let msg = format!("Received unstructured message from User {user_id}: \"{t}\"");

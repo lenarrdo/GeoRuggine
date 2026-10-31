@@ -5,7 +5,6 @@ use tokio::sync::mpsc::Sender;
 use crate::{
     messages::{position::Coordinates, text::TextMessage},
     shared::utils::INACTIVE_THRESHOLD,
-    tui::chat_box::UIMessage,
 };
 
 #[derive(Clone)]
@@ -13,7 +12,6 @@ pub struct ConnectedClient {
     tx: Sender<TextMessage>,
     journey_id: Option<String>,
     last_position: Option<Coordinates>,
-    messages: Vec<UIMessage>,
 }
 
 impl ConnectedClient {
@@ -22,7 +20,6 @@ impl ConnectedClient {
             tx,
             journey_id: None,
             last_position: None,
-            messages: vec![],
         }
     }
 }
@@ -49,8 +46,6 @@ impl ClientsList {
         tx.send(text_message.clone())
             .await
             .map_err(|e| format!("Couldn't send message to User #{user_id}: {e}"))?;
-
-        // client.messages.push(UIMessage::new(0, text_message));
 
         Ok(())
     }
@@ -90,20 +85,6 @@ impl ClientsList {
             && user.journey_id.is_none()
         {
             user.journey_id = Some(journey_id.to_string());
-        }
-    }
-
-    pub fn save_client_message(&self, user_id: u32, text_message: TextMessage) {
-        if let Some(mut client) = self.list.get_mut(&user_id) {
-            client.messages.push(UIMessage::new(user_id, text_message));
-        };
-    }
-
-    pub fn get_messages(&self, user_id: u32) -> Option<Vec<UIMessage>> {
-        if let Some(client) = self.list.get(&user_id) {
-            Some(client.messages.clone())
-        } else {
-            None
         }
     }
 }

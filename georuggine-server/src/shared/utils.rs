@@ -5,6 +5,7 @@ use tokio::sync::mpsc::Sender;
 use crate::tui::AppEvent;
 
 pub const INACTIVE_THRESHOLD: ChronoDuration = ChronoDuration::minutes(3);
+pub const SERVER_ID: u32 = 0;
 
 pub fn format_chrono_duration(duration: ChronoDuration) -> String {
     let std_duration = duration.to_std().expect("Found a negative duration.");

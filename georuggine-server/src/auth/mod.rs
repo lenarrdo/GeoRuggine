@@ -11,7 +11,7 @@ use crate::{
         dto::{AuthRequest, AuthResponse, LoginError, RegisterError},
     },
     shared::app_state::AppState,
-    tui::{AppEvent, user_list::User},
+    tui::AppEvent,
 };
 
 pub async fn handle_registration(
@@ -25,7 +25,7 @@ pub async fn handle_registration(
 
     let _ = state
         .tx
-        .send(AppEvent::UserRegistered(User::new(user_id, username)))
+        .send(AppEvent::UserRegistered((user_id, username.to_owned())))
         .await;
 
     Ok((StatusCode::CREATED, Json(AuthResponse::success())))
