@@ -22,10 +22,7 @@ use crate::{
         position::repository::PositionRepository,
         text::{TextMessage, repository::TextMessageRepository},
     },
-    shared::{
-        app_state::AppState,
-        utils::{self, SERVER_ID},
-    },
+    shared::{app_state::AppState, utils::SERVER_ID},
     tui::AppEvent,
     websocket::{
         clients::ConnectedClient,
@@ -65,14 +62,7 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, state: Arc<AppState>
     let (tx, mut rx) = mpsc::channel::<TextMessage>(100);
 
     state.clients.list.insert(user_id, ConnectedClient::new(tx));
-    utils::send_app_events(
-        vec![
-            AppEvent::UserConnected(user_id),
-            AppEvent::LogMessage(format!("User #{user_id} connected.")),
-        ],
-        &state.tx,
-    )
-    .await;
+    let _ = state.tx.send(AppEvent::UserConnected(user_id)).await;
 
     let mut send_task = tokio::spawn(async move {
         while let Some(msg) = rx.recv().await {
@@ -110,14 +100,7 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, state: Arc<AppState>
     }
 
     state.clients.list.remove(&user_id);
-    utils::send_app_events(
-        vec![
-            AppEvent::UserDisconnected(user_id),
-            AppEvent::LogMessage(format!("User #{user_id} disconnected.")),
-        ],
-        &state.tx,
-    )
-    .await;
+    let _ = state.tx.send(AppEvent::UserDisconnected(user_id)).await;
 }
 
 pub async fn process_message(
@@ -125,71 +108,55 @@ pub async fn process_message(
     user_id: u32,
     state: Arc<AppState>,
 ) -> ControlFlow<(), ()> {
+    let Message::Text(message) = msg else {
+        return ControlFlow::Continue(());
+    };
+
+    let Ok(parsed_message) = serde_json::from_str::<ClientIncomingMessage>(&message) else {
+        let log_msg = format!("Received unstructured message from User #{user_id}: '{message}'");
+        let _ = state.tx.send(AppEvent::LogMessage(log_msg)).await;
+        return ControlFlow::Continue(());
+    };
+
     let pos_repo = PositionRepository::new(state.db.clone());
-    match msg {
-        Message::Text(t) => match serde_json::from_str::<ClientIncomingMessage>(&t) {
-            Ok(ClientIncomingMessage::Position(pos)) => {
-                let mut journey_id = state.clients.get_journey_id(user_id);
-                if journey_id.is_none() {
-                    let new_id = format!("{user_id}-{:?}", Utc::now().timestamp());
-                    state.clients.set_journey_id(user_id, &new_id);
-                    journey_id = Some(new_id);
-                }
-                let _ = pos_repo
-                    .save_position(user_id, &journey_id.unwrap(), &pos)
-                    .await;
-
-                let msg = format!("Received coordinates {} from User {user_id}.", pos);
-                let _ = state.tx.send(AppEvent::LogMessage(msg)).await;
-
-                state.clients.update_position(user_id, pos);
-                let event = if state.clients.is_moving(user_id) {
-                    AppEvent::UserMoving(user_id)
-                } else {
-                    AppEvent::UserStopped(user_id)
-                };
-                state.tx.send(event).await.unwrap();
+    match parsed_message {
+        ClientIncomingMessage::Position(pos) => {
+            let mut journey_id = state.clients.get_journey_id(user_id);
+            if journey_id.is_none() {
+                let new_id = format!("{user_id}-{:?}", Utc::now().timestamp());
+                state.clients.set_journey_id(user_id, &new_id);
+                journey_id = Some(new_id);
             }
-            Ok(ClientIncomingMessage::Text(text_msg)) => {
-                let log_msg = format!("New message from User #{user_id}: {}", text_msg.contents);
-
-                utils::send_app_events(
-                    vec![
-                        AppEvent::LogMessage(log_msg),
-                        AppEvent::NewMessage((user_id, text_msg.clone())),
-                    ],
-                    &state.tx,
-                )
+            let _ = pos_repo
+                .save_position(user_id, &journey_id.unwrap(), &pos)
                 .await;
 
-                if let Some(journey_id) = state.clients.get_journey_id(user_id) {
-                    let res = TextMessageRepository::new(state.db.clone())
-                        .save_message(user_id, SERVER_ID, &journey_id, &text_msg)
-                        .await;
-                    if let Err(e) = res {
-                        let _ = state.tx.send(AppEvent::LogMessage(e.to_string())).await;
-                    }
+            let msg = format!("Received coordinates {} from User {user_id}.", pos);
+            let _ = state.tx.send(AppEvent::LogMessage(msg)).await;
+
+            state.clients.update_position(user_id, pos);
+            let event = if state.clients.is_moving(user_id) {
+                AppEvent::UserMoving(user_id)
+            } else {
+                AppEvent::UserStopped(user_id)
+            };
+            state.tx.send(event).await.unwrap();
+        }
+        ClientIncomingMessage::Text(text_msg) => {
+            let _ = state
+                .tx
+                .send(AppEvent::NewMessage((user_id, text_msg.clone())))
+                .await;
+
+            if let Some(journey_id) = state.clients.get_journey_id(user_id) {
+                let res = TextMessageRepository::new(state.db.clone())
+                    .save_message(user_id, SERVER_ID, &journey_id, &text_msg)
+                    .await;
+                if let Err(e) = res {
+                    let _ = state.tx.send(AppEvent::LogMessage(e.to_string())).await;
                 }
             }
-            Err(_) => {
-                let msg = format!("Received unstructured message from User {user_id}: \"{t}\"");
-                state.tx.send(AppEvent::LogMessage(msg)).await.unwrap();
-            }
-        },
-        Message::Close(c) => {
-            if let Some(cf) = c {
-                let msg = format!(
-                    "User #{user_id} requested to close the socket ({}).",
-                    cf.reason
-                );
-                state.tx.send(AppEvent::LogMessage(msg)).await.unwrap();
-            } else {
-                let msg = format!("{user_id} closed the connection.");
-                state.tx.send(AppEvent::LogMessage(msg)).await.unwrap();
-            }
-            return ControlFlow::Break(());
         }
-        _ => {}
     }
 
     ControlFlow::Continue(())

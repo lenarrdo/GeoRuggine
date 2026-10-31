@@ -131,13 +131,22 @@ impl App {
                 Some(app_event) = self.rx.recv() => {
                     match app_event {
                         AppEvent::UserRegistered((user_id, username)) => self.user_list.add_user(User::new(user_id, &username)),
-                        AppEvent::UserConnected(user_id) => self.user_list.set_status(user_id, UserStatus::Still),
-                        AppEvent::UserDisconnected(user_id) => self.user_list.set_status(user_id, UserStatus::Disconnected),
+                        AppEvent::UserConnected(user_id) => {
+                            self.user_list.set_status(user_id, UserStatus::Still);
+                            self.logs_tab.add_message(format!("User #{user_id} connected."));
+                        }
+                        AppEvent::UserDisconnected(user_id) => {
+                            self.user_list.set_status(user_id, UserStatus::Disconnected);
+                            self.logs_tab.add_message(format!("User #{user_id} disconnected."));
+                        },
                         AppEvent::UserMoving(user_id) => self.user_list.set_status(user_id, UserStatus::Moving),
                         AppEvent::UserStopped(user_id) => self.user_list.set_status(user_id, UserStatus::Still),
                         AppEvent::LogMessage(msg) => self.logs_tab.add_message(msg),
                         AppEvent::Tick => self.user_list.scan_inactive(),
-                        AppEvent::NewMessage((sender_id, text_msg)) => self.update_chat_box(sender_id, text_msg),
+                        AppEvent::NewMessage((sender_id, text_msg)) => {
+                            self.update_chat_box(sender_id, &text_msg);
+                            self.logs_tab.add_message(format!("New message from User #{sender_id}: {}", text_msg.contents));
+                        },
                     }
                 }
             }
@@ -174,7 +183,8 @@ impl App {
                 }
             }
 
-            self.update_chat_box(SERVER_ID, text_msg);
+            // FIXME
+            self.update_chat_box(SERVER_ID, &text_msg);
 
             return;
         } else if self.user_info_popup.visible {
@@ -245,8 +255,6 @@ impl App {
                 .areas(main_content);
         let [chat, logs_stats] =
             Layout::vertical([Constraint::Percentage(75), Constraint::Fill(1)]).areas(info);
-        // let [logs, stats] =
-        //     Layout::horizontal([Constraint::Percentage(75), Constraint::Fill(1)]).areas(logs_stats);
 
         let rounded_block = |title| {
             Block::bordered()
@@ -254,7 +262,7 @@ impl App {
                 .border_style(Style::default().fg(TEXT_FG_COLOR))
                 .title(format!(" {title} "))
         };
-        // frame.render_widget(rounded_block("CPU Usage"), stats);
+
         frame.render_widget(
             Paragraph::new("Use ↓↑ to move, g/G to go top/bottom, q to quit."),
             footer,
@@ -293,7 +301,7 @@ impl App {
         }
     }
 
-    fn update_chat_box(&mut self, sender_id: u32, text_msg: TextMessage) {
+    fn update_chat_box(&mut self, sender_id: u32, text_msg: &TextMessage) {
         if let Some(hovered_user) = self.user_list.get_hovered_user()
             && (hovered_user.id == sender_id || sender_id == SERVER_ID)
         {
