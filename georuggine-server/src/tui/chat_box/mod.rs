@@ -1,6 +1,5 @@
-use std::fmt::Display;
+pub mod ui_message;
 
-use chrono::{DateTime, Utc};
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Margin, Rect},
@@ -9,30 +8,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
 };
 
-use crate::shared::utils::SERVER_ID;
-
-#[derive(Default, Clone)]
-pub struct UIMessage {
-    timestamp: DateTime<Utc>,
-    contents: String,
-    pub sender: u32,
-}
-
-impl Display for UIMessage {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.contents)
-    }
-}
-
-impl UIMessage {
-    pub fn new(sender: u32, contents: &str, timestamp: DateTime<Utc>) -> Self {
-        UIMessage {
-            sender,
-            timestamp: timestamp,
-            contents: contents.to_owned(),
-        }
-    }
-}
+use crate::{shared::utils::SERVER_ID, tui::chat_box::ui_message::UIMessage};
 
 #[derive(Default)]
 pub struct ChatBox {

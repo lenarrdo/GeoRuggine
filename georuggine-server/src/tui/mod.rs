@@ -27,11 +27,11 @@ use crate::{
     },
     shared::{app_state::AppState, utils::SERVER_ID},
     tui::{
-        chat_box::{ChatBox, UIMessage},
+        chat_box::{ChatBox, ui_message::UIMessage},
         logs_tab::LogsTab,
         message_popup::MessagePopup,
         user_info_popup::UserInfoPopup,
-        user_list::{User, UserList, UserStatus},
+        user_list::{UserList, user::User, user_status::UserStatus},
     },
 };
 

@@ -1,6 +1,7 @@
-use std::{collections::VecDeque, fmt::Display};
+pub mod log_message;
 
-use chrono::{DateTime, Local, Utc};
+use std::collections::VecDeque;
+
 use ratatui::{
     Frame,
     layout::Rect,
@@ -8,32 +9,9 @@ use ratatui::{
     widgets::{Block, List, ListItem},
 };
 
+use crate::tui::logs_tab::log_message::LogMessage;
+
 const MAX_STORED_MESSAGES: usize = 50;
-
-struct LogMessage {
-    contents: String,
-    timestamp: DateTime<Utc>,
-}
-
-impl LogMessage {
-    pub fn new(contents: String) -> Self {
-        LogMessage {
-            contents,
-            timestamp: Utc::now(),
-        }
-    }
-}
-
-impl Display for LogMessage {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "[{}] {}",
-            self.timestamp.with_timezone(&Local).format("%H:%M:%S"),
-            self.contents
-        )
-    }
-}
 
 #[derive(Default)]
 pub struct LogsTab {

@@ -13,7 +13,7 @@ use crate::{
         service::{get_average_speed, get_movement_stats},
     },
     shared::utils,
-    tui::{TimeFrame, user_list::User},
+    tui::{TimeFrame, user_list::user::User},
 };
 
 #[derive(Default)]

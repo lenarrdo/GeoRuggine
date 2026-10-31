@@ -1,81 +1,18 @@
-use std::fmt::Display;
+pub mod user;
+pub mod user_status;
 
-use chrono::{DateTime, Local};
+use chrono::Utc;
 use ratatui::{
     Frame,
     layout::Rect,
-    style::{Color, Modifier, Style},
-    text::Line,
+    style::{Modifier, Style},
     widgets::{Block, List, ListItem, ListState},
 };
 
-use crate::shared::utils::INACTIVE_THRESHOLD;
-
-#[derive(Clone, PartialEq)]
-pub enum UserStatus {
-    Moving,
-    Still,
-    Disconnected,
-}
-
-impl Default for UserStatus {
-    fn default() -> Self {
-        UserStatus::Still
-    }
-}
-
-impl Display for UserStatus {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let str = match self {
-            UserStatus::Disconnected => "Disconnected",
-            UserStatus::Still => "Still",
-            UserStatus::Moving => "Moving",
-        };
-
-        write!(f, "{str}")
-    }
-}
-
-impl UserStatus {
-    pub fn to_color(&self) -> Color {
-        match self {
-            UserStatus::Disconnected => Color::DarkGray,
-            UserStatus::Still => Color::Gray,
-            UserStatus::Moving => Color::LightGreen,
-        }
-    }
-}
-
-#[derive(Clone, Default)]
-pub struct User {
-    pub id: u32,
-    pub username: String,
-    pub status: UserStatus,
-    pub last_timestamp: Option<DateTime<Local>>,
-    selected: bool,
-}
-
-impl User {
-    pub fn new(id: u32, username: &str) -> Self {
-        User {
-            id,
-            username: username.to_owned(),
-            selected: false,
-            status: UserStatus::Disconnected,
-            last_timestamp: None,
-        }
-    }
-}
-
-impl From<&User> for ListItem<'_> {
-    fn from(user: &User) -> Self {
-        let prefix = if user.selected { "✗" } else { "☐" };
-        ListItem::new(Line::styled(
-            format!("{prefix} {}", user.username),
-            user.status.to_color(),
-        ))
-    }
-}
+use crate::{
+    shared::utils::INACTIVE_THRESHOLD,
+    tui::user_list::{user::User, user_status::UserStatus},
+};
 
 #[derive(Default)]
 pub struct UserList {
@@ -187,7 +124,7 @@ impl UserList {
         };
 
         if new_status != UserStatus::Disconnected {
-            user.last_timestamp = Some(Local::now());
+            user.last_timestamp = Some(Utc::now());
         }
         user.status = new_status;
     }
@@ -199,7 +136,7 @@ impl UserList {
             }
 
             if let Some(timestamp) = user.last_timestamp
-                && Local::now().signed_duration_since(timestamp) > INACTIVE_THRESHOLD
+                && Utc::now().signed_duration_since(timestamp) > INACTIVE_THRESHOLD
             {
                 user.status = UserStatus::Still;
             }
