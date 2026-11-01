@@ -55,7 +55,9 @@ impl PositionRepository {
         time_frame: TimeFrame,
     ) -> Result<Vec<Journey>, sqlx::Error> {
         let mut query_builder = QueryBuilder::new(
-            "SELECT lat, lon, journey_id, timestamp FROM positions WHERE user_id =",
+            "SELECT lat, lon, journey_id, timestamp
+            FROM positions p JOIN journeys j
+            WHERE p.journey_id = j.id AND started_by = ",
         );
         query_builder.push_bind(user_id);
 

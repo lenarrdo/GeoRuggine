@@ -87,15 +87,13 @@ pub async fn init(
     .execute(&mut *tx)
     .await?;
 
-    if reset_tables {
-        // need to recreate special "server" user if table were reset
-        sqlx::query(
-            "INSERT INTO users (id, username, password_hash) \
-             VALUES (0, 'system@local', '');",
-        )
-        .execute(&mut *tx)
-        .await?;
-    }
+    // ensure that the special "server" user is present
+    sqlx::query(
+        "INSERT OR IGNORE INTO users (id, username, password_hash) \
+         VALUES (0, 'system@local', '');",
+    )
+    .execute(&mut *tx)
+    .await?;
 
     tx.commit().await?;
 
