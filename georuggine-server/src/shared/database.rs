@@ -78,8 +78,8 @@ pub async fn init(
         "CREATE TABLE IF NOT EXISTS positions (
             id INTEGER PRIMARY KEY,
             journey_id INTEGER NOT NULL,
-            lat INTEGER NOT NULL,
-            lon INTEGER NOT NULL,
+            lat REAL NOT NULL,
+            lon REAL NOT NULL,
             timestamp DATETIME NOT NULL,
             FOREIGN KEY(journey_id) REFERENCES journeys(id)
         );",

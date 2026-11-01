@@ -5,7 +5,7 @@ use std::time::Duration;
 
 pub async fn start_background_tracking(
     state: &AppState,
-    coordinates: Vec<(i64, i64)>,
+    coordinates: Vec<(f64, f64)>,
 ) -> Result<(), String> {
     if coordinates.is_empty() {
         return Err("No coordinates provided for tracking.".to_string());
