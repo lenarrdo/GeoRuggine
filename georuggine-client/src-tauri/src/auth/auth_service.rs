@@ -3,13 +3,12 @@ use crate::auth::models::dto::{AuthRequest, AuthResponse};
 pub const SERVER_HTTP_URL: &str = "http://127.0.0.1:3000/api/v1";
 
 fn handle_reqwest_error(e: reqwest::Error) -> String {
-    eprintln!("[AuthService] Dettaglio errore HTTP: {e}");
     if e.is_connect() {
-        "Impossibile connettersi al server. Riprova più tardi.".to_string()
+        "Unable to connect to the server. Please try again later.".to_string()
     } else if e.is_timeout() {
-        "Il server non risponde entro il tempo limite. Riprova più tardi.".to_string()
+        "The server did not respond in time. Please try again later.".to_string()
     } else {
-        "Errore di comunicazione con il server. Riprova più tardi.".to_string()
+        "Communication error with the server. Please try again later.".to_string()
     }
 }
 
@@ -32,10 +31,7 @@ impl AuthService {
         let body = res
             .json::<AuthResponse>()
             .await
-            .map_err(|e| {
-                eprintln!("[AuthService] Errore parsing JSON risposta: {e}");
-                "Risposta non valida ricevuta dal server.".to_string()
-            })?;
+            .map_err(|_| "Invalid response received from the server.".to_string())?;
 
         if !status.is_success() {
             return Err(body.message);
@@ -63,10 +59,7 @@ impl AuthService {
         let body = res
             .json::<AuthResponse>()
             .await
-            .map_err(|e| {
-                eprintln!("[AuthService] Errore parsing JSON risposta: {e}");
-                "Risposta non valida ricevuta dal server.".to_string()
-            })?;
+            .map_err(|_| "Invalid response received from the server.".to_string())?;
 
         if !status.is_success() {
             return Err(body.message);

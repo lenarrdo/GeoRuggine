@@ -1,13 +1,12 @@
 use crate::auth::auth_service::AuthService;
 use crate::auth::models::{AuthResult, UserSession};
-use crate::messages::position::start_background_tracking;
 use crate::state::AppState;
 use crate::websocket::connect_ws_internal;
 
 pub struct AuthController;
 
 impl AuthController {
-    /// Business logic per la registrazione utente
+    /// Business logic for user registration
     pub async fn register(username: String, password: String) -> AuthResult {
         match AuthService::register(username, password).await {
             Ok(body) => AuthResult {
@@ -21,11 +20,11 @@ impl AuthController {
         }
     }
 
-    /// Business logic per il login utente:
-    /// - Autenticazione HTTP tramite AuthService
-    /// - Salvataggio della sessione (token JWT) nello stato protetto Rust
-    /// - Apertura della connessione WebSocket con il token
-    /// - Avvio del task di tracking delle coordinate in background
+    /// Business logic for user login:
+    /// - HTTP authentication through AuthService
+    /// - Session (JWT token) storage in the protected Rust state
+    /// - WebSocket connection opening with the token
+    /// - Background coordinate tracking task startup
     pub async fn login(
         app_handle: &tauri::AppHandle,
         state: &AppState,
@@ -43,29 +42,28 @@ impl AuthController {
         };
 
         if let Some(token) = &body.token {
-            // 1. Salva la sessione completa (con token JWT) nello stato protetto Rust
+            // 1. Connect the WebSocket: without chat the login does not succeed
+            if connect_ws_internal(app_handle, state, token).await.is_err() {
+                return AuthResult {
+                    success: false,
+                    message: "Unable to connect. Please try again later.".to_string(),
+                };
+            }
+
+            // 2. Save the full session (with JWT token) only once the WebSocket is active
             let session = UserSession {
                 username: username.clone(),
                 token: token.clone(),
             };
             if let Err(e) = state.save_session(session) {
+                state.disconnect_ws();
                 return AuthResult {
                     success: false,
-                    message: format!("Errore nel salvataggio della sessione: {e}"),
+                    message: format!("Failed to save the session: {e}"),
                 };
             }
 
-            // 2. Connette la WebSocket al server usando il token
-            if let Err(e) = connect_ws_internal(app_handle, state, token).await {
-                eprintln!("[AuthController] Login completato, ma errore apertura WebSocket: {e}");
-            } else {
-                // 3. Avvia Task 3 (Tracking periodico da file ogni 30s)
-                if let Err(e) = start_background_tracking(state).await {
-                    eprintln!("[AuthController] Errore avvio background tracking: {e}");
-                }
-            }
-
-            // 4. Risultato esposto a React (nessun token trapelato)
+            // 3. Outcome exposed to React (no token leaked)
             AuthResult {
                 success: true,
                 message: body.message,
@@ -73,18 +71,18 @@ impl AuthController {
         } else {
             AuthResult {
                 success: false,
-                message: "Token mancante nella risposta del server.".to_string(),
+                message: "Missing token in the server response.".to_string(),
             }
         }
     }
 
-    /// Business logic per il logout: disconnette WebSocket e azzera la sessione
+    /// Business logic for logout: disconnects the WebSocket and clears the session
     pub fn logout(state: &AppState) -> Result<(), String> {
         state.disconnect_ws();
         state.clear_session()
     }
 
-    /// Recupera l'username dell'utente correntemente loggato
+    /// Returns the username of the currently logged-in user
     pub fn get_current_user(state: &AppState) -> Result<Option<String>, String> {
         let session = state.get_session()?;
         Ok(session.map(|s| s.username))

@@ -9,5 +9,5 @@ export interface UiMessage {
   senderName: string;
   text: string;
   time: string;
-  delivered?: boolean;
+  failed?: boolean;
 }

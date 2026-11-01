@@ -2,28 +2,28 @@ use crate::auth::controller::AuthController;
 use crate::auth::models::AuthResult;
 use crate::state::AppState;
 
-/// Registrazione utente: validazione dei parametri e invocazione del controller
+/// User registration: parameter validation and controller invocation
 #[tauri::command]
 pub async fn register(username: String, password: String) -> Result<AuthResult, String> {
     let trimmed_username = username.trim();
     if trimmed_username.is_empty() {
         return Ok(AuthResult {
             success: false,
-            message: "Lo username non può essere vuoto.".to_string(),
+            message: "Username cannot be empty.".to_string(),
         });
     }
 
     if password.len() < 4 {
         return Ok(AuthResult {
             success: false,
-            message: "La password deve contenere almeno 4 caratteri.".to_string(),
+            message: "Password must be at least 4 characters long.".to_string(),
         });
     }
 
     Ok(AuthController::register(trimmed_username.to_string(), password).await)
 }
 
-/// Login utente: validazione dei parametri e invocazione del controller
+/// User login: parameter validation and controller invocation
 #[tauri::command]
 pub async fn login(
     app_handle: tauri::AppHandle,
@@ -35,20 +35,20 @@ pub async fn login(
     if trimmed_username.is_empty() || password.trim().is_empty() {
         return Ok(AuthResult {
             success: false,
-            message: "Username e password sono obbligatori.".to_string(),
+            message: "Username and password are required.".to_string(),
         });
     }
 
     Ok(AuthController::login(&app_handle, &state, trimmed_username.to_string(), password).await)
 }
 
-/// Logout: disconnette tutti i task e resetta la sessione
+/// Logout: disconnects every task and resets the session
 #[tauri::command]
 pub fn logout(state: tauri::State<'_, AppState>) -> Result<(), String> {
     AuthController::logout(&state)
 }
 
-/// Recupera l'utente attualmente loggato
+/// Returns the currently logged-in user
 #[tauri::command]
 pub fn get_current_user(
     state: tauri::State<'_, AppState>,

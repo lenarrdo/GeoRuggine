@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-/// Modello per i messaggi di testo
+/// Model for text messages
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TextMessage {
     pub contents: String,

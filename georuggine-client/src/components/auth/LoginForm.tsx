@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Card, Form, Button, Alert, InputGroup, Spinner } from "react-bootstrap";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { User, Lock, Eye, EyeOff } from "lucide-react";
 import { LoginFormData } from "../../types/auth";
 
 interface LoginFormProps {
@@ -18,14 +18,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   errorMessage,
   successMessage,
 }) => {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password) return;
-    await onSubmit({ email, password });
+    if (!username.trim() || !password) return;
+    await onSubmit({ username: username.trim(), password });
   };
 
   return (
@@ -33,10 +33,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       <Card.Body>
         <div className="auth-form-header mb-4 border-bottom border-secondary pb-3">
           <Card.Title as="h2" className="h4 fw-bold font-monospace text-light mb-1 auth-title">
-            Accedi al tuo account
+            Sign in to your account
           </Card.Title>
           <Card.Subtitle className="text-secondary small font-monospace auth-subtitle">
-            Inserisci le tue credenziali per continuare
+            Enter your credentials to continue
           </Card.Subtitle>
         </div>
 
@@ -53,29 +53,29 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         )}
 
         <Form className="auth-form" onSubmit={handleSubmit}>
-          {/* Campo Email */}
-          <Form.Group className="mb-3" controlId="login-email">
+          {/* Username field */}
+          <Form.Group className="mb-3" controlId="login-username">
             <Form.Label className="small text-secondary font-monospace mb-1">
-              Email
+              Username
             </Form.Label>
             <InputGroup>
               <InputGroup.Text className="bg-dark border-secondary text-secondary">
-                <Mail size={18} />
+                <User size={18} />
               </InputGroup.Text>
               <Form.Control
                 type="text"
                 className="bg-dark text-light border-secondary font-monospace"
-                placeholder="nome@dominio.it"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                placeholder="e.g. user_1"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
-                autoComplete="email"
+                autoComplete="username"
                 disabled={isLoading}
               />
             </InputGroup>
           </Form.Group>
 
-          {/* Campo Password con Toggle Visibilità */}
+          {/* Password field with visibility toggle */}
           <Form.Group className="mb-4" controlId="login-password">
             <Form.Label className="small text-secondary font-monospace mb-1">
               Password
@@ -99,40 +99,40 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 className="border-secondary text-secondary"
                 onClick={() => setShowPassword(!showPassword)}
                 tabIndex={-1}
-                title={showPassword ? "Nascondi password" : "Mostra password"}
+                title={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </Button>
             </InputGroup>
           </Form.Group>
 
-          {/* Bottone Accedi */}
+          {/* Sign in button */}
           <Button
             type="submit"
             variant="primary"
             className="w-100 py-2 font-monospace fw-semibold shadow-sm mb-3 auth-submit-btn"
-            disabled={isLoading || !email.trim() || !password}
+            disabled={isLoading || !username.trim() || !password}
           >
             {isLoading ? (
               <span className="d-flex align-items-center justify-content-center gap-2">
                 <Spinner animation="border" size="sm" />
-                Accesso in corso...
+                Signing in...
               </span>
             ) : (
-              "Accedi"
+              "Sign in"
             )}
           </Button>
 
-          {/* Link verso Registrazione */}
+          {/* Link to registration */}
           <div className="text-center font-monospace small text-secondary">
-            <span>Non hai un account? </span>
+            <span>Don't have an account? </span>
             <Button
               variant="link"
               className="text-info p-0 font-monospace text-decoration-none fw-semibold"
               onClick={onSwitchToRegister}
               disabled={isLoading}
             >
-              Registrati
+              Sign up
             </Button>
           </div>
         </Form>
