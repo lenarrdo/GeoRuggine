@@ -169,17 +169,22 @@ impl App {
                 return;
             }
 
-            for receiver_id in previously_selected {
-                if let Err(e) = self.state.clients.send_one(receiver_id, &msg).await {
+            for user_id in previously_selected {
+                if let Err(e) = self.state.clients.send_one(user_id, &msg).await {
                     self.logs_tab.add_message(e);
                     continue;
                 }
 
-                if let Some(journey_id) = self.state.clients.get_journey_id(receiver_id) {
-                    let res = TextMessageRepository::new(self.state.db.clone())
-                        .save_message(SERVER_ID, receiver_id, journey_id, &text_msg)
-                        .await;
-                    self.logs_tab.add_message(format!("{res:?}"));
+                if let Some(journey_id) = self.state.clients.get_journey_id(user_id) {
+                    let log_msg = match TextMessageRepository::new(self.state.db.clone())
+                        .save_message(SERVER_ID, user_id, journey_id, &text_msg)
+                        .await
+                    {
+                        Ok(()) => format!("Successfully sent message to User #{user_id}."),
+                        Err(e) => e.to_string(),
+                    };
+
+                    self.logs_tab.add_message(log_msg);
                 }
             }
 
@@ -263,10 +268,10 @@ impl App {
                 .title(format!(" {title} "))
         };
 
-        frame.render_widget(
-            Paragraph::new("Use ↓↑ to move, g/G to go top/bottom, q to quit."),
-            footer,
-        );
+        let info_bar_msg = "▲▼: move | SHIFT+▲▼: scroll chat | a: select all users | n: new message | i: user info | q: quit.";
+        // "Use ↓↑ to move, SHIFT+↓↑ to scroll through the chat, g/G to go top/bottom, i to see user info, a to select all users, n to send a new message, q to quit.";
+
+        frame.render_widget(Paragraph::new(info_bar_msg), footer);
 
         self.user_list
             .render(rounded_block("Users"), frame, user_bar);

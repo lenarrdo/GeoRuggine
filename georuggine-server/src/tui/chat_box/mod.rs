@@ -1,5 +1,6 @@
 pub mod ui_message;
 
+use chrono::Local;
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Margin, Rect},
@@ -68,7 +69,11 @@ impl ChatBox {
                 })
                 .split(chunk);
 
-            let formatted_timestamp = msg.timestamp.format("%H:%M").to_string();
+            let formatted_timestamp = msg
+                .timestamp
+                .with_timezone(&Local)
+                .format("%H:%M")
+                .to_string();
 
             let bubble_block = Block::default()
                 .borders(Borders::ALL)
