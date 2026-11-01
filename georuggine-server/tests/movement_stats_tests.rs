@@ -13,7 +13,7 @@ async fn no_positions() {
 #[tokio::test]
 async fn one_position() {
     let journeys: Vec<Journey> = vec![Journey::new(
-        "0".to_string(),
+        1,
         vec![Coordinates::new(10.0, 10.0, Utc::now())],
     )];
     let (t_moving, t_not_moving) = get_movement_stats(&journeys);
@@ -27,7 +27,7 @@ async fn one_position() {
 async fn user_moving_two_positions() {
     let dt = "2015-06-03T12:34:56Z".parse::<DateTime<Utc>>().unwrap();
     let journeys: Vec<Journey> = vec![Journey::new(
-        "0".to_string(),
+        1,
         vec![
             Coordinates::new(10.0, 10.0, dt),
             Coordinates::new(10.2, 10.0, dt + Duration::seconds(30)),
@@ -46,7 +46,7 @@ async fn user_moving_two_positions() {
 async fn user_moving_many_positions() {
     let dt = "2015-06-03T12:34:56Z".parse::<DateTime<Utc>>().unwrap();
     let joruneys: Vec<Journey> = vec![Journey::new(
-        "0".to_string(),
+        1,
         vec![
             Coordinates::new(10.0, 10.0, dt),
             Coordinates::new(10.2, 10.0, dt + Duration::seconds(30)),
@@ -68,7 +68,7 @@ async fn user_moving_many_positions() {
 async fn pause_is_detected() {
     let dt = "2015-06-03T12:34:56Z".parse::<DateTime<Utc>>().unwrap();
 
-    let mut journey = Journey::new("0".to_string(), vec![]);
+    let mut journey = Journey::new(1, vec![]);
     for i in 0..=5 {
         journey.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(30 * i)));
     }
@@ -96,7 +96,7 @@ async fn pause_is_detected() {
 async fn movement_and_pause() {
     let dt = "2015-06-03T12:34:56Z".parse::<DateTime<Utc>>().unwrap();
 
-    let mut journey = Journey::new("0".to_string(), vec![]);
+    let mut journey = Journey::new(1, vec![]);
 
     // user moves for 60s...
     journey.push(Coordinates::new(10.0, 10.0, dt));

@@ -9,10 +9,18 @@ use crate::{
 
 #[derive(sqlx::FromRow)]
 struct PositionRow {
-    journey_id: String,
+    journey_id: u32,
     lat: f64,
     lon: f64,
     timestamp: DateTime<Utc>,
+}
+
+#[derive(sqlx::FromRow)]
+pub struct JourneyRow {
+    pub id: u32,
+    pub started_by: u32,
+    pub started_at: DateTime<Utc>,
+    pub ended_at: DateTime<Utc>,
 }
 
 #[derive(Clone)]
@@ -27,20 +35,16 @@ impl PositionRepository {
 
     pub async fn save_position(
         &self,
-        user_id: u32,
-        journey_id: &str,
+        journey_id: u32,
         position: &Coordinates,
     ) -> Result<(), sqlx::Error> {
-        sqlx::query(
-            "INSERT INTO positions (user_id, journey_id, lat, lon, timestamp) VALUES (?, ?, ?, ?, ?);",
-        )
-        .bind(user_id)
-        .bind(journey_id)
-        .bind(position.lat)
-        .bind(position.lon)
-        .bind(position.timestamp.to_rfc3339())
-        .execute(&self.db_pool)
-        .await?;
+        sqlx::query("INSERT INTO positions (journey_id, lat, lon, timestamp) VALUES (?, ?, ?, ?);")
+            .bind(journey_id)
+            .bind(position.lat)
+            .bind(position.lon)
+            .bind(position.timestamp.to_rfc3339())
+            .execute(&self.db_pool)
+            .await?;
 
         Ok(())
     }
@@ -69,9 +73,8 @@ impl PositionRepository {
             .fetch_all(&self.db_pool)
             .await?;
 
-        let mut positions: HashMap<String, Vec<Coordinates>> = HashMap::new();
+        let mut positions: HashMap<u32, Vec<Coordinates>> = HashMap::new();
         for row in rows {
-            // map.entry(row.journey_id).and_modify(|journey| journey.)
             positions
                 .entry(row.journey_id)
                 .or_default()
@@ -88,5 +91,23 @@ impl PositionRepository {
             .collect();
 
         Ok(journeys)
+    }
+
+    /// creates a new journey for a given user.
+    /// returns the new journey if successful
+    pub async fn create_new_journey(&self, user_id: u32) -> Result<u32, sqlx::Error> {
+        let id = sqlx::query(
+            "INSERT INTO journeys (started_by, started_at) \
+             VALUES (?, ?) \
+             RETURNING id;
+             ",
+        )
+        .bind(user_id)
+        .bind(Utc::now().to_rfc3339())
+        .execute(&self.db_pool)
+        .await?
+        .last_insert_rowid();
+
+        Ok(id as u32)
     }
 }

@@ -26,10 +26,13 @@ pub async fn init(
         sqlx::query("DROP TABLE IF EXISTS users")
             .execute(&mut *tx)
             .await?;
+        sqlx::query("DROP TABLE IF EXISTS journeys")
+            .execute(&mut *tx)
+            .await?;
         sqlx::query("DROP TABLE IF EXISTS positions")
             .execute(&mut *tx)
             .await?;
-        sqlx::query("DROP TABLE IF EXISTS messages")
+        sqlx::query("DROP TABLE IF EXISTS text_messages")
             .execute(&mut *tx)
             .await?;
     }
@@ -45,33 +48,54 @@ pub async fn init(
     .await?;
 
     sqlx::query(
-        "CREATE TABLE IF NOT EXISTS positions (
+        "CREATE TABLE IF NOT EXISTS journeys (
             id INTEGER PRIMARY KEY,
-            user_id INTEGER NOT NULL,
-            journey_id TEXT NOT NULL,
-            lat REAL NOT NULL,
-            lon REAL NOT NULL,
-            timestamp DATETIME NOT NULL,
-            FOREIGN KEY(user_id) REFERENCES users(id)
+            started_by INTEGER NOT NULL,
+            started_at DATETIME NOT NULL,
+            FOREIGN KEY(started_by) REFERENCES users(id)
         );",
     )
     .execute(&mut *tx)
     .await?;
 
     sqlx::query(
-        "CREATE TABLE IF NOT EXISTS messages (
-            message_id INTEGER PRIMARY KEY,
+        "CREATE TABLE IF NOT EXISTS text_messages (
+            id INTEGER PRIMARY KEY,
             sender_id INTEGER NOT NULL,
-            receiver_id INTEGER,
-            journey_id TEXT NOT NULL,
+            receiver_id INTEGER NOT NULL,
+            journey_id INTEGER NOT NULL,
             timestamp DATETIME NOT NULL,
-            contents TEXT
-            -- FOREIGN KEY(sender_id) REFERENCES users(id)
-            -- FOREIGN KEY(receiver_id) REFERENCES users(id)
+            contents TEXT,
+            FOREIGN KEY(sender_id) REFERENCES users(id),
+            FOREIGN KEY(receiver_id) REFERENCES users(id),
+            FOREIGN KEY(journey_id) REFERENCES journeys(id)
         );",
     )
     .execute(&mut *tx)
     .await?;
+
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS positions (
+            id INTEGER PRIMARY KEY,
+            journey_id INTEGER NOT NULL,
+            lat INTEGER NOT NULL,
+            lon INTEGER NOT NULL,
+            timestamp DATETIME NOT NULL,
+            FOREIGN KEY(journey_id) REFERENCES journeys(id)
+        );",
+    )
+    .execute(&mut *tx)
+    .await?;
+
+    if reset_tables {
+        // need to recreate special "server" user if table were reset
+        sqlx::query(
+            "INSERT INTO users (id, username, password_hash) \
+             VALUES (0, 'system@local', '');",
+        )
+        .execute(&mut *tx)
+        .await?;
+    }
 
     tx.commit().await?;
 

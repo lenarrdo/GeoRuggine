@@ -10,15 +10,15 @@ use crate::{
 #[derive(Clone)]
 pub struct ConnectedClient {
     tx: Sender<TextMessage>,
-    journey_id: Option<String>,
+    journey_id: u32,
     last_position: Option<Coordinates>,
 }
 
 impl ConnectedClient {
-    pub fn new(tx: Sender<TextMessage>) -> Self {
+    pub fn new(tx: Sender<TextMessage>, journey_id: u32) -> Self {
         ConnectedClient {
             tx,
-            journey_id: None,
+            journey_id,
             last_position: None,
         }
     }
@@ -76,15 +76,11 @@ impl ClientsList {
         Utc::now().signed_duration_since(last_position.timestamp) < INACTIVE_THRESHOLD
     }
 
-    pub fn get_journey_id(&self, user_id: u32) -> Option<String> {
-        self.list.get(&user_id)?.journey_id.clone()
-    }
+    pub fn get_journey_id(&self, user_id: u32) -> Option<u32> {
+        let Some(user) = self.list.get(&user_id) else {
+            return None;
+        };
 
-    pub fn set_journey_id(&self, user_id: u32, journey_id: &str) {
-        if let Some(mut user) = self.list.get_mut(&user_id)
-            && user.journey_id.is_none()
-        {
-            user.journey_id = Some(journey_id.to_string());
-        }
+        Some(user.journey_id)
     }
 }

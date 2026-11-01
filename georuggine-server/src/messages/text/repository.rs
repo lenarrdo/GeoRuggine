@@ -8,7 +8,7 @@ pub struct TextMessageRow {
     pub id: u32,
     pub sender_id: u32,
     pub receiver_id: u32,
-    pub journey_id: String,
+    pub journey_id: u32,
     pub timestamp: DateTime<Utc>,
     pub contents: String,
 }
@@ -27,11 +27,12 @@ impl TextMessageRepository {
         &self,
         sender_id: u32,
         receiver_id: u32,
-        journey_id: &str,
+        journey_id: u32,
         text_message: &TextMessage,
     ) -> Result<(), sqlx::Error> {
         sqlx::query(
-            "INSERT INTO messages (sender_id, receiver_id, journey_id, timestamp, contents) VALUES (?, ?, ?, ?, ?);",
+            "INSERT INTO text_messages (sender_id, receiver_id, journey_id, timestamp, contents) \
+             VALUES (?, ?, ?, ?, ?);",
         )
         .bind(sender_id)
         .bind(receiver_id)
@@ -45,9 +46,12 @@ impl TextMessageRepository {
     }
 
     /// returns all the messages sent in a given journey_id
-    pub async fn get_messages(&self, journey_id: &str) -> Result<Vec<TextMessageRow>, sqlx::Error> {
+    pub async fn get_messages(&self, journey_id: u32) -> Result<Vec<TextMessageRow>, sqlx::Error> {
         let messages = sqlx::query_as::<_, TextMessageRow>(
-            "SELECT message_id AS id, sender_id, receiver_id, journey_id, timestamp, contents FROM messages WHERE journey_id = ? ORDER BY timestamp;",
+            "SELECT id, sender_id, receiver_id, journey_id, timestamp, contents \
+             FROM text_messages \
+             WHERE journey_id = ? \
+             ORDER BY timestamp;",
         )
         .bind(journey_id)
         .fetch_all(&self.db_pool)

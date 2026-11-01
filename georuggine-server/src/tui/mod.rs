@@ -177,7 +177,7 @@ impl App {
 
                 if let Some(journey_id) = self.state.clients.get_journey_id(receiver_id) {
                     let res = TextMessageRepository::new(self.state.db.clone())
-                        .save_message(SERVER_ID, receiver_id, &journey_id, &text_msg)
+                        .save_message(SERVER_ID, receiver_id, journey_id, &text_msg)
                         .await;
                     self.logs_tab.add_message(format!("{res:?}"));
                 }
@@ -288,7 +288,7 @@ impl App {
         };
 
         let res = TextMessageRepository::new(self.state.db.clone())
-            .get_messages(&journey_id)
+            .get_messages(journey_id)
             .await;
         if let Err(e) = res {
             vec![UIMessage::new(420, &e.to_string(), Utc::now())]

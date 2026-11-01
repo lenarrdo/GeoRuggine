@@ -10,7 +10,6 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
-use chrono::Utc;
 use futures_util::{sink::SinkExt, stream::StreamExt};
 use std::{ops::ControlFlow, sync::Arc};
 use tokio::sync::mpsc;
@@ -61,7 +60,16 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, state: Arc<AppState>
     let (mut ws_sender, mut ws_receiver) = socket.split();
     let (tx, mut rx) = mpsc::channel::<TextMessage>(100);
 
-    state.clients.list.insert(user_id, ConnectedClient::new(tx));
+    let pos_repo = PositionRepository::new(state.db.clone());
+
+    let journey_id = pos_repo
+        .create_new_journey(user_id)
+        .await
+        .unwrap_or_default(); // this isn't ideal
+    state
+        .clients
+        .list
+        .insert(user_id, ConnectedClient::new(tx, journey_id));
     let _ = state.tx.send(AppEvent::UserConnected(user_id)).await;
 
     let mut send_task = tokio::spawn(async move {
@@ -121,15 +129,18 @@ pub async fn process_message(
     let pos_repo = PositionRepository::new(state.db.clone());
     match parsed_message {
         ClientIncomingMessage::Position(pos) => {
-            let mut journey_id = state.clients.get_journey_id(user_id);
-            if journey_id.is_none() {
-                let new_id = format!("{user_id}-{:?}", Utc::now().timestamp());
-                state.clients.set_journey_id(user_id, &new_id);
-                journey_id = Some(new_id);
+            let Some(journey_id) = state.clients.get_journey_id(user_id) else {
+                let msg = format!("Could not find User #{user_id}.");
+                let _ = state.tx.send(AppEvent::LogMessage(msg)).await;
+                return ControlFlow::Continue(());
+            };
+
+            let res = pos_repo.save_position(journey_id, &pos).await;
+            if let Err(e) = res {
+                let msg = format!("{e}");
+                let _ = state.tx.send(AppEvent::LogMessage(msg)).await;
+                return ControlFlow::Continue(());
             }
-            let _ = pos_repo
-                .save_position(user_id, &journey_id.unwrap(), &pos)
-                .await;
 
             let msg = format!("Received coordinates {} from User {user_id}.", pos);
             let _ = state.tx.send(AppEvent::LogMessage(msg)).await;
@@ -150,7 +161,7 @@ pub async fn process_message(
 
             if let Some(journey_id) = state.clients.get_journey_id(user_id) {
                 let res = TextMessageRepository::new(state.db.clone())
-                    .save_message(user_id, SERVER_ID, &journey_id, &text_msg)
+                    .save_message(user_id, SERVER_ID, journey_id, &text_msg)
                     .await;
                 if let Err(e) = res {
                     let _ = state.tx.send(AppEvent::LogMessage(e.to_string())).await;

@@ -6,12 +6,12 @@ use crate::{
 
 #[derive(Default)]
 pub struct Journey {
-    _id: String,
+    _id: u32,
     coordinates: Vec<Coordinates>,
 }
 
 impl Journey {
-    pub fn new(id: String, coordinates: Vec<Coordinates>) -> Self {
+    pub fn new(id: u32, coordinates: Vec<Coordinates>) -> Self {
         Journey {
             _id: id,
             coordinates,
