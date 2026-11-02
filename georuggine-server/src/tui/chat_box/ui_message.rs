@@ -2,6 +2,8 @@ use std::fmt::Display;
 
 use chrono::{DateTime, Utc};
 
+use crate::messages::text::TextMessage;
+
 #[derive(Default, Clone)]
 pub struct UIMessage {
     pub timestamp: DateTime<Utc>,
@@ -21,6 +23,15 @@ impl UIMessage {
             sender,
             timestamp: timestamp,
             contents: contents.to_owned(),
+        }
+    }
+
+    pub fn from(text_msg: &TextMessage, sender_id: u32) -> Self {
+        let date_time: DateTime<Utc> = text_msg.timestamp.parse().unwrap_or(Utc::now());
+        UIMessage {
+            timestamp: date_time,
+            contents: text_msg.contents.to_owned(),
+            sender: sender_id,
         }
     }
 }

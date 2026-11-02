@@ -6,7 +6,7 @@ pub mod user_list;
 
 use std::{sync::Arc, time::Duration};
 
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use crossterm::event::{
     Event as CrosstermEvent, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
 };
@@ -144,7 +144,7 @@ impl App {
                         AppEvent::LogMessage(msg) => self.logs_tab.add_message(msg),
                         AppEvent::Tick => self.user_list.scan_inactive(),
                         AppEvent::NewMessage((sender_id, text_msg)) => {
-                            self.update_chat_box(sender_id, &text_msg);
+                            self.update_chat_box(sender_id, SERVER_ID, &text_msg);
                             self.logs_tab.add_message(format!("New message from User #{sender_id}: {}", text_msg.contents));
                         },
                     }
@@ -160,8 +160,6 @@ impl App {
             let Some(msg) = self.message_popup.handle_key(key) else {
                 return;
             };
-            let text_msg = TextMessage::new(msg.clone());
-
             let previously_selected = self.user_list.clear_selected_users();
             if previously_selected.is_empty() {
                 self.logs_tab
@@ -169,27 +167,32 @@ impl App {
                 return;
             }
 
-            for user_id in previously_selected {
-                if let Err(e) = self.state.clients.send_one(user_id, &msg).await {
+            let text_msg = TextMessage::new(msg.clone());
+            for receiver_id in previously_selected {
+                // send message
+                if let Err(e) = self.state.clients.send_one(receiver_id, &msg).await {
                     self.logs_tab.add_message(e);
                     continue;
                 }
 
-                if let Some(journey_id) = self.state.clients.get_journey_id(user_id) {
-                    let log_msg = match TextMessageRepository::new(self.state.db.clone())
-                        .save_message(SERVER_ID, user_id, journey_id, &text_msg)
-                        .await
-                    {
-                        Ok(()) => format!("Successfully sent message to User #{user_id}."),
-                        Err(e) => e.to_string(),
-                    };
+                self.logs_tab
+                    .add_message(format!("Successfully sent message to User #{receiver_id}."));
 
-                    self.logs_tab.add_message(log_msg);
+                self.update_chat_box(SERVER_ID, receiver_id, &text_msg);
+
+                // save message to db
+                let Some(journey_id) = self.state.clients.get_journey_id(receiver_id) else {
+                    continue;
+                };
+
+                if let Err(e) = TextMessageRepository::new(self.state.db.clone())
+                    .save_message(SERVER_ID, receiver_id, journey_id, &text_msg)
+                    .await
+                {
+                    self.logs_tab
+                        .add_message(format!("Couldn't save message to db: {}", e.to_string()));
                 }
             }
-
-            // FIXME
-            self.update_chat_box(SERVER_ID, &text_msg);
 
             return;
         } else if self.user_info_popup.visible {
@@ -232,6 +235,7 @@ impl App {
                 KeyCode::Char('G') | KeyCode::End => self.user_list.select_last(),
                 KeyCode::Char(' ') => self.user_list.toggle_selected(),
                 KeyCode::Char('a') => self.user_list.select_all_toggle(),
+                KeyCode::Char('n') => self.message_popup.show(),
                 KeyCode::Char('i') => {
                     let Some(user) = self.user_list.get_hovered_user() else {
                         return;
@@ -246,7 +250,6 @@ impl App {
 
                     self.user_info_popup.visible = true
                 }
-                KeyCode::Char('n') => self.message_popup.show(),
                 _ => {}
             }
         }
@@ -269,8 +272,6 @@ impl App {
         };
 
         let info_bar_msg = "▲▼: move | SHIFT+▲▼: scroll chat | a: select all users | n: new message | i: user info | q: quit.";
-        // "Use ↓↑ to move, SHIFT+↓↑ to scroll through the chat, g/G to go top/bottom, i to see user info, a to select all users, n to send a new message, q to quit.";
-
         frame.render_widget(Paragraph::new(info_bar_msg), footer);
 
         self.user_list
@@ -306,14 +307,17 @@ impl App {
         }
     }
 
-    fn update_chat_box(&mut self, sender_id: u32, text_msg: &TextMessage) {
-        if let Some(hovered_user) = self.user_list.get_hovered_user()
-            && (hovered_user.id == sender_id || sender_id == SERVER_ID)
+    fn update_chat_box(&mut self, sender_id: u32, receiver_id: u32, text_msg: &TextMessage) {
+        let Some(hovered_user) = self.user_list.get_hovered_user() else {
+            return;
+        };
+
+        if hovered_user.id == sender_id
+            || (sender_id == SERVER_ID && receiver_id == hovered_user.id)
         {
-            let date_time: DateTime<Utc> = text_msg.timestamp.parse().unwrap_or(Utc::now());
             self.chat_box
                 .messages
-                .push(UIMessage::new(sender_id, &text_msg.contents, date_time));
+                .push(UIMessage::from(text_msg, sender_id));
         }
     }
 }
