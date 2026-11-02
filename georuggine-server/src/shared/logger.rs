@@ -3,7 +3,7 @@ use std::{fs::OpenOptions, io::Write, time::Duration};
 use chrono::Local;
 use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System};
 
-pub fn start_cpu_logger(interval: Duration, output_path: &str) {
+pub fn start(interval: Duration, output_path: &str) {
     let output_path = output_path.to_string();
 
     std::thread::spawn(move || {

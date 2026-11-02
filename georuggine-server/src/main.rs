@@ -7,7 +7,7 @@ use tokio::sync::mpsc;
 
 use georuggine_server::{
     auth::{handle_login, handle_registration, user_repository::UserRepository},
-    shared::{app_state::AppState, config::Config, database as db, utils},
+    shared::{app_state::AppState, config::Config, database as db, logger, utils},
     tui::{App, AppEvent},
     websocket::{clients::ClientsList, ws_handler},
 };
@@ -20,10 +20,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("Couldn't load '.env' file. Did you make a local copy of '.env.template'?");
 
     utils::ensure_dir_exists(&config.log_file)?;
-    georuggine_server::logger::start_cpu_logger(
-        std::time::Duration::from_secs(120),
-        &config.log_file,
-    );
+    logger::start(std::time::Duration::from_secs(120), &config.log_file);
 
     // channel to send messages to the UI
     let (tx, rx) = mpsc::channel(100);
