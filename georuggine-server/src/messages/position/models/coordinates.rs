@@ -19,7 +19,7 @@ impl Coordinates {
         }
     }
 
-    /// Haversine formula implementation to compute the distance between `self` and `other`.
+    /// Haversine formula implementation to compute the distance (in kilometers) between `self` and `other`.
     pub fn distance_from(&self, other: &Coordinates) -> f64 {
         const EARTH_RADIUS_KM: f64 = 6371.0;
 

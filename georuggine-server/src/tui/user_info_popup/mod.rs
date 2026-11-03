@@ -8,10 +8,7 @@ use ratatui::{
 };
 
 use crate::{
-    messages::position::{
-        Journey,
-        service::{get_average_speed, get_movement_stats},
-    },
+    messages::position::{self, Journey},
     shared::utils,
     tui::{TimeFrame, user_list::user::User},
 };
@@ -24,6 +21,7 @@ pub struct UserInfoPopup {
 
     // selected user info
     pub user: User,
+    pub total_distance: f64,
     pub avg_speed: f64,
     pub time_moving: String,
     pub time_not_moving: String,
@@ -37,7 +35,7 @@ impl UserInfoPopup {
 
         let centered_area = frame
             .area()
-            .centered(Constraint::Percentage(40), Constraint::Percentage(20));
+            .centered(Constraint::Percentage(40), Constraint::Length(10));
 
         frame.render_widget(Clear, centered_area);
 
@@ -57,10 +55,18 @@ impl UserInfoPopup {
 
     fn render_content(&self, frame: &mut Frame, area: Rect) {
         let info = format!(
-            "ID: {}\nUsername: {}\nStatus: {}\n---\nAverage Speed: {:.2} km/h\nTime Moving: {}\nTime Not Moving: {}\n",
+            "ID: {}\n\
+            Username: {}\n\
+            Status: {}\n\
+            ---\n\
+            Total Distance: {:.2} km\n\
+            Average Speed: {:.2} km/h\n\
+            Time Moving: {}\n\
+            Time Not Moving: {}",
             self.user.id,
             self.user.username,
             self.user.status,
+            self.total_distance,
             self.avg_speed,
             self.time_moving.to_string(),
             self.time_not_moving.to_string()
@@ -88,10 +94,12 @@ impl UserInfoPopup {
     }
 
     pub fn update_movement_stats(&mut self, journeys: &[Journey]) {
-        let (time_moving, time_not_moving) = get_movement_stats(journeys);
+        let (time_moving, time_not_moving) = position::service::get_movement_stats(journeys);
         self.time_moving = utils::format_chrono_duration(time_moving);
         self.time_not_moving = utils::format_chrono_duration(time_not_moving);
 
-        self.avg_speed = get_average_speed(&journeys).unwrap_or_default();
+        self.avg_speed = position::service::get_average_speed(&journeys).unwrap_or_default();
+
+        self.total_distance = position::service::get_total_distance(journeys);
     }
 }

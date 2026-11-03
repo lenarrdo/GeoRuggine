@@ -76,7 +76,8 @@ impl Journey {
         Some((self.compute_total_distance(), total_hours))
     }
 
-    fn compute_total_distance(&self) -> f64 {
+    /// Computes the total distance (in kilometers) travelled in a single journey.
+    pub fn compute_total_distance(&self) -> f64 {
         self.coordinates
             .windows(2)
             .map(|w| w[0].distance_from(&w[1]))
