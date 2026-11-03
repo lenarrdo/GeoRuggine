@@ -1,38 +1,46 @@
-use std::{fs::OpenOptions, io::Write, time::Duration};
-
 use chrono::Local;
-use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System};
+use cpu_time::ProcessTime;
+use std::fs::OpenOptions;
+use std::io::Write;
+use std::time::{Duration, Instant};
 
 pub fn start(interval: Duration, output_path: &str) {
     let output_path = output_path.to_string();
 
     std::thread::spawn(move || {
-        let mut sys = System::new();
-        let pid = Pid::from_u32(std::process::id());
-
         let mut file = OpenOptions::new()
             .create(true)
             .append(true)
             .open(&output_path)
             .expect("Failed to open CPU log file");
 
+        let process_start_cpu = ProcessTime::now();
+
+        let mut last_cpu_time = process_start_cpu;
+        let mut last_real_time = Instant::now();
+
         loop {
-            // Refresh process info for the current process
-            sys.refresh_processes_specifics(
-                ProcessesToUpdate::Some(&[pid]),
-                true,
-                ProcessRefreshKind::nothing().with_cpu(),
-            );
-
-            if let Some(process) = sys.process(pid) {
-                let cpu_usage = process.cpu_usage();
-                let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S");
-
-                let _ = writeln!(file, "[{}] CPU Usage: {:.2}%", timestamp, cpu_usage);
-                let _ = file.flush();
-            }
-
             std::thread::sleep(interval);
+
+            let current_cpu_time = ProcessTime::now();
+            let current_real_time = Instant::now();
+
+            let cpu_delta = current_cpu_time.duration_since(last_cpu_time);
+            let real_delta = current_real_time.duration_since(last_real_time);
+
+            let cpu_usage = (cpu_delta.as_secs_f64() / real_delta.as_secs_f64()) * 100.0;
+
+            let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S");
+
+            let _ = writeln!(
+                file,
+                "[{timestamp}] CPU Usage: {cpu_usage:.2}% | CPU Time: {:.2?}",
+                process_start_cpu.elapsed()
+            );
+            let _ = file.flush();
+
+            last_cpu_time = current_cpu_time;
+            last_real_time = current_real_time;
         }
     });
 }
