@@ -42,7 +42,7 @@
         ];
 
         shellHook = ''
-          export XDG_DATA_DIRS="$GSETTINGS_SCHEMAS_PATH"
+          export XDG_DATA_DIRS="$GSETTINGS_SCHEMAS_PATH:$XDG_DATA_DIRS"
           export WEBKIT_DISABLE_DMABUF_RENDERER=1
         '';
       };
