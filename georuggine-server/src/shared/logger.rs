@@ -1,10 +1,13 @@
 use chrono::Local;
 use cpu_time::ProcessTime;
 use std::fs::OpenOptions;
-use std::io::Write;
+use std::io::{self, Write};
 use std::time::{Duration, Instant};
 
-pub fn start(interval: Duration, output_path: &str) {
+use crate::shared::utils;
+
+pub fn start(interval: Duration, output_path: &str) -> Result<(), io::Error> {
+    utils::ensure_dir_exists(output_path)?;
     let output_path = output_path.to_string();
 
     std::thread::spawn(move || {
@@ -43,4 +46,6 @@ pub fn start(interval: Duration, output_path: &str) {
             last_real_time = current_real_time;
         }
     });
+
+    Ok(())
 }

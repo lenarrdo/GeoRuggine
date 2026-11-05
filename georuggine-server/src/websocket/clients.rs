@@ -83,4 +83,12 @@ impl ClientsList {
 
         Some(user.journey_id)
     }
+
+    pub fn is_connected(&self, user_id: u32) -> bool {
+        if self.list.get(&user_id).is_some() {
+            true
+        } else {
+            false
+        }
+    }
 }

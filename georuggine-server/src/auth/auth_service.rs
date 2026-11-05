@@ -73,7 +73,7 @@ impl AuthService {
         Ok(token_data.claims)
     }
 
-    fn generate_jwt(
+    pub fn generate_jwt(
         &self,
         user_id: u32,
         username: &str,
