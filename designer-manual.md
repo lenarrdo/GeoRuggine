@@ -21,6 +21,110 @@ The client is divided into two cooperating parts:
 This manual describes the architecture, communication protocols, main modules,
 data flows and operational behavior of both the server and the client.
 
+## System architecture flow
+
+The following diagram shows the main architectural flow of the application.
+It focuses on the communication boundaries between the graphical interface,
+the native client backend and the server.
+
+```mermaid
+flowchart LR
+    User[User] --> React[React frontend]
+    React -->|Tauri commands and events| Tauri[Tauri/Rust backend]
+    Tauri -->|HTTP/JSON| Server[Rust server]
+    Tauri <-->|WebSocket/JSON| Server
+    Server --> SQLite[(SQLite)]
+    Server --> TUI[Ratatui TUI]
+```
+
+The client is composed of the React frontend and the Tauri/Rust backend. React
+handles user interaction and rendering, while Tauri translates UI operations
+into native commands and manages all communication with the server.
+
+The communication is divided between two protocols:
+
+1. **HTTP/JSON** is used for registration and login.
+2. **WebSocket/JSON** is used for real-time messaging and position updates.
+
+The server persists application data in SQLite and exposes operational
+information through the Ratatui terminal interface.
+
+### Authentication flow
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant React as React frontend
+    participant Tauri as Tauri/Rust backend
+    participant Server
+    participant DB as SQLite
+
+    User->>React: Enter username and password
+    React->>Tauri: invoke("login")
+    Tauri->>Server: POST /api/v1/auth/login
+    Server->>DB: Verify credentials
+    DB-->>Server: User and password result
+    Server-->>Tauri: Auth response with JWT
+    Tauri->>Server: Open WebSocket with JWT
+    Server->>Server: Validate JWT
+    Server-->>Tauri: WebSocket accepted
+    Tauri-->>React: Login successful
+```
+
+The JWT is kept inside the Rust client state. It is not exposed to React
+components. The client session is considered active only after both HTTP login
+and WebSocket connection have succeeded.
+
+### Message flow
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant React as React frontend
+    participant Tauri as Tauri/Rust backend
+    participant Server
+    participant DB as SQLite
+
+    User->>React: Write and send message
+    React->>Tauri: invoke("send_chat_message")
+    Tauri->>Tauri: Enqueue message in MPSC channel
+    Tauri->>Server: WebSocket text message
+    Server->>DB: Store message
+    Server-->>Tauri: Server response/event
+    Tauri-->>React: chat-message-received
+    React->>React: Update ChatView
+```
+
+Messages sent by the server follow the opposite direction: the WebSocket
+reception task reads the message, Tauri emits `chat-message-received`, and
+React appends it to the chat.
+
+### Position flow
+
+```mermaid
+sequenceDiagram
+    participant React as React frontend
+    participant Tauri as Tauri/Rust backend
+    participant Tracking as Tracking task
+    participant Server
+    participant DB as SQLite
+    participant TUI as Ratatui TUI
+
+    React->>Tauri: Upload JSON coordinate file
+    Tauri->>Tauri: Validate and deserialize coordinates
+    Tauri->>Tracking: Start background tracking
+    loop Every 30 seconds
+        Tracking->>Tauri: Create PositionUpdate
+        Tauri->>Server: WebSocket position message
+        Server->>DB: Save position
+        Server->>TUI: Emit movement/state event
+    end
+    Tracking-->>Tauri: Stop when all points are sent
+```
+
+The frontend only selects and uploads the file. Parsing, timestamp creation,
+periodic transmission and task cancellation are handled by the Tauri backend.
+
 ## Architecture
 
 ### Server
