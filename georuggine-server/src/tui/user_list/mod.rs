@@ -80,14 +80,18 @@ impl UserList {
     }
 
     pub fn select_all_toggle(&mut self) {
-        let all_selected =
-            self.users.iter().filter(|user| user.selected).count() == self.users.len();
+        let online_clients: Vec<&mut User> = self
+            .users
+            .iter_mut()
+            .filter(|user| user.status != UserStatus::Disconnected)
+            .collect();
 
-        if all_selected {
-            self.clear_selected_users();
-        } else {
-            self.users.iter_mut().for_each(|user| user.selected = true);
-        }
+        let all_selected =
+            online_clients.iter().filter(|user| user.selected).count() == online_clients.len();
+
+        online_clients
+            .into_iter()
+            .for_each(|user| user.selected = !all_selected);
     }
 
     pub fn toggle_selected(&mut self) {
