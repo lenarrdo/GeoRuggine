@@ -8,16 +8,47 @@ use tokio_tungstenite::tungstenite::Message;
 
 pub const WS_URL: &str = "ws://127.0.0.1:3000/api/v1/ws";
 
+/// Abstraction over the event channel used to notify the frontend.
+///
+/// In production it is implemented by `tauri::AppHandle`; in tests it can be
+/// replaced by a recorder so that the whole WebSocket pipeline can be exercised
+/// without starting a Tauri window.
+pub trait WsEventEmitter: Clone + Send + Sync + 'static {
+    fn emit_chat_message(&self, message: TextMessage);
+    fn emit_disconnected(&self);
+}
+
+impl WsEventEmitter for tauri::AppHandle {
+    fn emit_chat_message(&self, message: TextMessage) {
+        let _ = self.emit("chat-message-received", message);
+    }
+
+    fn emit_disconnected(&self) {
+        let _ = self.emit("ws-disconnected", ());
+    }
+}
+
 pub async fn connect_ws_internal(
     app_handle: &tauri::AppHandle,
     state: &AppState,
     token: &str,
 ) -> Result<(), String> {
+    connect_ws_to(app_handle, state, token, WS_URL).await
+}
+
+/// Testable core of the WebSocket connection: the URL and the event emitter are
+/// injected so that integration tests can point it at a local test server.
+pub async fn connect_ws_to<E: WsEventEmitter>(
+    emitter: &E,
+    state: &AppState,
+    token: &str,
+    ws_url: &str,
+) -> Result<(), String> {
     // Proactively close any open session
     state.disconnect_ws();
 
     // 1. Physical WebSocket connection to the remote server, passing the JWT token
-    let ws_endpoint = format!("{WS_URL}?token={token}");
+    let ws_endpoint = format!("{ws_url}?token={token}");
     let (ws_stream, _) = connect_async(&ws_endpoint)
         .await
         .map_err(|e| format!("WebSocket connection to {ws_endpoint} failed: {e}"))?;
@@ -34,7 +65,7 @@ pub async fn connect_ws_internal(
 
     // TASK 1: TRANSMISSION (the only consumer of the channel towards the web)
     let state_for_send = state.clone();
-    let app_for_send = app_handle.clone();
+    let emitter_for_send = emitter.clone();
     let send_handle = tokio::spawn(async move {
         while let Some(msg) = rx.recv().await {
             if let Ok(json) = serde_json::to_string(&msg) {
@@ -45,20 +76,20 @@ pub async fn connect_ws_internal(
         }
         let _ = ws_sink.close().await;
         // Unexpected close: notify the frontend (does not happen on logout, where the task is aborted)
-        let _ = app_for_send.emit("ws-disconnected", ());
+        emitter_for_send.emit_disconnected();
         state_for_send.disconnect_ws();
     })
     .abort_handle();
 
     // TASK 2: RECEPTION (continuously listening for messages from the server)
-    let app_clone = app_handle.clone();
+    let emitter_for_recv = emitter.clone();
     let state_for_recv = state.clone();
     let recv_handle = tokio::spawn(async move {
         while let Some(msg_result) = ws_stream.next().await {
             match msg_result {
                 Ok(Message::Text(text)) => {
                     if let Ok(chat) = serde_json::from_str::<TextMessage>(&text) {
-                        let _ = app_clone.emit("chat-message-received", chat);
+                        emitter_for_recv.emit_chat_message(chat);
                     }
                 }
                 Ok(Message::Close(_)) => break,
@@ -69,7 +100,7 @@ pub async fn connect_ws_internal(
         }
 
         // Unexpected close: notify the frontend (does not happen on logout, where the task is aborted)
-        let _ = app_clone.emit("ws-disconnected", ());
+        emitter_for_recv.emit_disconnected();
         state_for_recv.disconnect_ws();
     })
     .abort_handle();

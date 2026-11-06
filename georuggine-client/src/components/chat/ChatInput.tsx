@@ -36,10 +36,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter") {
+      // Always prevent the implicit form submit so that Shift+Enter cannot
+      // accidentally send the message; only plain Enter triggers a send.
       e.preventDefault();
       e.stopPropagation();
-      handleSend();
+      if (!e.shiftKey) {
+        handleSend();
+      }
     }
   };
 
