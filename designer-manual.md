@@ -35,6 +35,7 @@ flowchart LR
     Tauri <-->|WebSocket/JSON| Server
     Server --> SQLite[(SQLite)]
     Server --> TUI[Ratatui TUI]
+    Administrator[Administrator] <-->|Monitoring and commands| TUI
 ```
 
 The client is composed of the React frontend and the Tauri/Rust backend. React
