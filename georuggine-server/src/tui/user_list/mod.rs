@@ -10,7 +10,7 @@ use ratatui::{
 };
 
 use crate::{
-    shared::utils::INACTIVE_THRESHOLD,
+    shared::utils::POSITION_UPDATE_INTERVAL,
     tui::user_list::{user::User, user_status::UserStatus},
 };
 
@@ -140,7 +140,7 @@ impl UserList {
             }
 
             if let Some(timestamp) = user.last_timestamp
-                && Utc::now().signed_duration_since(timestamp) > INACTIVE_THRESHOLD
+                && Utc::now().signed_duration_since(timestamp) > POSITION_UPDATE_INTERVAL
             {
                 user.status = UserStatus::Still;
             }

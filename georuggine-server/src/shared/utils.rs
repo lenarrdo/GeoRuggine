@@ -2,6 +2,7 @@ use chrono::Duration as ChronoDuration;
 use std::{fs, path::Path, time::Duration as StdDuration};
 
 pub const INACTIVE_THRESHOLD: ChronoDuration = ChronoDuration::minutes(3);
+pub const POSITION_UPDATE_INTERVAL: ChronoDuration = ChronoDuration::seconds(30);
 pub const SERVER_ID: u32 = 0;
 
 pub fn format_chrono_duration(duration: ChronoDuration) -> String {
