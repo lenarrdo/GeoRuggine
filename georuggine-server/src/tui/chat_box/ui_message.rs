@@ -27,9 +27,8 @@ impl UIMessage {
     }
 
     pub fn from(text_msg: &TextMessage, sender_id: u32) -> Self {
-        let date_time: DateTime<Utc> = text_msg.timestamp.parse().unwrap_or(Utc::now());
         UIMessage {
-            timestamp: date_time,
+            timestamp: text_msg.timestamp,
             contents: text_msg.contents.to_owned(),
             sender: sender_id,
         }
