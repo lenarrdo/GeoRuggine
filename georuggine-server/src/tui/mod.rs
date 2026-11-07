@@ -132,7 +132,7 @@ impl App {
                     match app_event {
                         AppEvent::UserRegistered((user_id, username)) => self.user_list.add_user(User::new(user_id, &username)),
                         AppEvent::UserConnected(user_id) => {
-                            self.user_list.set_status(user_id, UserStatus::Still);
+                            self.user_list.set_status(user_id, UserStatus::Stopped);
                             self.logs_tab.add_message(format!("User #{user_id} connected."));
                         }
                         AppEvent::UserDisconnected(user_id) => {
@@ -140,7 +140,7 @@ impl App {
                             self.logs_tab.add_message(format!("User #{user_id} disconnected."));
                         },
                         AppEvent::UserMoving(user_id) => self.user_list.set_status(user_id, UserStatus::Moving),
-                        AppEvent::UserStopped(user_id) => self.user_list.set_status(user_id, UserStatus::Still),
+                        AppEvent::UserStopped(user_id) => self.user_list.set_status(user_id, UserStatus::Stopped),
                         AppEvent::LogMessage(msg) => self.logs_tab.add_message(msg),
                         AppEvent::Tick => self.user_list.scan_inactive(),
                         AppEvent::NewMessage((sender_id, text_msg)) => {

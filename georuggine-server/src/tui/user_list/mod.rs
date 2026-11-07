@@ -142,7 +142,7 @@ impl UserList {
             if let Some(timestamp) = user.last_timestamp
                 && Utc::now().signed_duration_since(timestamp) > POSITION_UPDATE_INTERVAL
             {
-                user.status = UserStatus::Still;
+                user.status = UserStatus::Stopped;
             }
         }
     }

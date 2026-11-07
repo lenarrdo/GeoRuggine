@@ -5,13 +5,13 @@ use ratatui::style::Color;
 #[derive(Clone, PartialEq)]
 pub enum UserStatus {
     Moving,
-    Still,
+    Stopped,
     Disconnected,
 }
 
 impl Default for UserStatus {
     fn default() -> Self {
-        UserStatus::Still
+        UserStatus::Stopped
     }
 }
 
@@ -19,7 +19,7 @@ impl Display for UserStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let str = match self {
             UserStatus::Disconnected => "Disconnected",
-            UserStatus::Still => "Still",
+            UserStatus::Stopped => "Stopped",
             UserStatus::Moving => "Moving",
         };
 
@@ -31,7 +31,7 @@ impl UserStatus {
     pub fn to_color(&self) -> Color {
         match self {
             UserStatus::Disconnected => Color::DarkGray,
-            UserStatus::Still => Color::Gray,
+            UserStatus::Stopped => Color::Gray,
             UserStatus::Moving => Color::LightGreen,
         }
     }
