@@ -28,7 +28,7 @@ pub async fn start_background_tracking(
             let pos = PositionUpdate {
                 lat: x,
                 lon: y,
-                timestamp: Some(chrono::Utc::now().to_rfc3339()),
+                timestamp: chrono::Utc::now().to_rfc3339(),
             };
 
             // Send the position on the shared MPSC channel towards Task 1

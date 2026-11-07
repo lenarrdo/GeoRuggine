@@ -5,8 +5,7 @@ use serde::{Deserialize, Serialize};
 pub struct PositionUpdate {
     pub lat: f64,
     pub lon: f64,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub timestamp: Option<String>,
+    pub timestamp: String,
 }
 
 /// Coordinate point read from a file (JSON or CSV)
