@@ -62,7 +62,7 @@ src/
 `ChatView` renders the message list and scrolls to the end when messages
 change. `ChatInput` trims messages, rejects empty input, sends on plain Enter
 and restores the input when sending fails. `ChatHeader` exposes Clear chat and
-Sign out. `ChatSidebar` exposes the chat tab and coordinate uploader.
+Logout. `ChatSidebar` exposes the chat tab and coordinate uploader.
 
 #### State management
 
@@ -445,7 +445,7 @@ sequenceDiagram
 
 #### Logout
 
-**Logout trigger:** the user selects Sign out.
+**Logout trigger:** the user selects Logout.
 
 Rust calls `disconnect_ws`, which aborts tracking, transmission and reception,
 drops the WebSocket sender and then clears the session. React clears messages,
@@ -458,7 +458,7 @@ sequenceDiagram
     participant Rust
     participant Server
 
-    User->>React: Select Sign out
+    User->>React: Select Logout
     React->>Rust: invoke("logout")
     Rust->>Server: Close WebSocket
     Rust->>Rust: Drop ws_tx and clear session

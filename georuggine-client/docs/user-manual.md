@@ -99,14 +99,10 @@ appear in the chat.
 
 The coordinate upload feature lets you share a route with the server.
 
-1. Prepare a JSON file containing an ordered list of positions.
-2. Select **Coordinate File**.
-3. Choose the JSON file.
-4. Confirm the upload.
+### Step 1: Prepare the coordinate file
 
-The client sends one position every 30 seconds while the route is active.
-
-The accepted canonical format is:
+Create a JSON file containing an ordered list of positions. The accepted
+canonical format is:
 
 ```json
 [
@@ -125,6 +121,9 @@ The aliases `lat` and `lon` are also accepted:
 ]
 ```
 
+The client sends the first position immediately and then sends one position
+every 30 seconds while the route is active.
+
 The coordinate file must:
 
 - use the `.json` extension;
@@ -133,11 +132,36 @@ The coordinate file must:
 - contain numeric coordinates;
 - be uploaded while you are connected.
 
-Uploading a new file replaces the route currently being sent. Route sending
-stops automatically when all positions have been sent, when you log out or
-when you close the application.
+### Step 2: Choose the JSON file
+
+In the **Coordinate File** panel, select **Choose .json**. This opens the file
+picker, which only accepts files with the `.json` extension.
 
 ![Coordinate file upload control.](./images/coordinate.png)
+
+### Step 3: Confirm the selected file
+
+Select the route file in the file picker. The panel then displays the selected
+filename and its size. Check that the correct file is shown before starting
+the upload.
+
+![Selected coordinate file.](./images/coordinateUploaded.png)
+
+### Step 4: Upload the coordinates
+
+Select **Upload coordinates**. The client reads the file, validates it and
+starts sending the route through the active connection. The upload button is
+temporarily disabled while the operation is in progress.
+
+When the operation starts successfully, the panel displays **File uploaded
+successfully!**.
+
+![Coordinate file uploaded successfully.](./images/coordinateUploaded2.png)
+
+The client continues sending the remaining positions every 30 seconds until
+the file is finished. Uploading a new file replaces the route currently being
+sent. Route sending stops automatically when all positions have been sent,
+when you log out or when you close the application.
 
 ## Logging Out
 

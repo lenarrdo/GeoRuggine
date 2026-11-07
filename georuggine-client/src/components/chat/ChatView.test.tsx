@@ -71,7 +71,7 @@ describe("ChatView", () => {
     const { onLogout, user } = setup();
 
     await user.click(screen.getByTitle("Options"));
-    await user.click(screen.getByText("Sign out"));
+    await user.click(screen.getByText("Logout"));
 
     expect(onLogout).toHaveBeenCalledTimes(1);
   });

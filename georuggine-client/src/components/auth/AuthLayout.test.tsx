@@ -10,7 +10,7 @@ describe("AuthLayout", () => {
       </AuthLayout>,
     );
 
-    expect(screen.getByText("GeoRust")).toBeInTheDocument();
+    expect(screen.getByText("GeoRuggine")).toBeInTheDocument();
     expect(screen.getByText("Track. Communicate. Analyze.")).toBeInTheDocument();
     expect(screen.getByText("auth form")).toBeInTheDocument();
   });

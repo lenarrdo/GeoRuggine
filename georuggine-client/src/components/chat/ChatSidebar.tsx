@@ -27,7 +27,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
           <MapPin size={20} className="text-white sidebar-brand-icon" />
         </div>
         <span className="fs-5 fw-bold font-monospace text-white sidebar-brand-name">
-          GeoRust
+          GeoRuggine
         </span>
       </div>
 

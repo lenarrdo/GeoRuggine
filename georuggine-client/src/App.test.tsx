@@ -265,7 +265,7 @@ describe("App chat flow", () => {
     await waitFor(() => expect(chatHandler).toBeDefined());
 
     await user.click(screen.getByTitle("Options"));
-    await user.click(screen.getByText("Sign out"));
+    await user.click(screen.getByText("Logout"));
 
     await waitFor(() => expect(apiLogout).toHaveBeenCalledTimes(1));
     expect(screen.getByText("Sign in to your account")).toBeInTheDocument();

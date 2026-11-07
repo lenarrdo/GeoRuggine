@@ -275,7 +275,7 @@ describe("frontend <-> backend IPC integration", () => {
     await registerAndLogin(user);
 
     await user.click(screen.getByTitle("Options"));
-    await user.click(screen.getByText("Sign out"));
+    await user.click(screen.getByText("Logout"));
 
     await waitFor(() => expect(backend.session).toBeNull());
     expect(backend.connected).toBe(false);

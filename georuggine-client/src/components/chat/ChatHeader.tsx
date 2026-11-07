@@ -76,7 +76,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   }}
                 >
                   <LogOut size={14} />
-                  <span>Sign out</span>
+                  <span>Logout</span>
                 </button>
               </li>
             </ul>

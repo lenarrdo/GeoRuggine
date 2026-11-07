@@ -9,7 +9,7 @@ describe("ChatHeader", () => {
 
     expect(screen.getByText("Server")).toBeInTheDocument();
     expect(screen.queryByText("alice")).not.toBeInTheDocument();
-    expect(screen.queryByText("Sign out")).not.toBeInTheDocument();
+    expect(screen.queryByText("Logout")).not.toBeInTheDocument();
   });
 
   it("opens the options menu with the username and actions", async () => {
@@ -26,7 +26,7 @@ describe("ChatHeader", () => {
 
     expect(screen.getByText("alice")).toBeInTheDocument();
     expect(screen.getByText("Clear chat")).toBeInTheDocument();
-    expect(screen.getByText("Sign out")).toBeInTheDocument();
+    expect(screen.getByText("Logout")).toBeInTheDocument();
   });
 
   it("calls onClearChat and closes the menu", async () => {
@@ -49,10 +49,10 @@ describe("ChatHeader", () => {
     render(<ChatHeader currentUser={{ username: "alice" }} onLogout={onLogout} />);
 
     await user.click(screen.getByTitle("Options"));
-    await user.click(screen.getByText("Sign out"));
+    await user.click(screen.getByText("Logout"));
 
     expect(onLogout).toHaveBeenCalledTimes(1);
-    expect(screen.queryByText("Sign out")).not.toBeInTheDocument();
+    expect(screen.queryByText("Logout")).not.toBeInTheDocument();
   });
 
   it("does not render the clear action when no handler is provided", async () => {
@@ -71,13 +71,13 @@ describe("ChatHeader", () => {
     );
 
     await user.click(screen.getByTitle("Options"));
-    expect(screen.getByText("Sign out")).toBeInTheDocument();
+    expect(screen.getByText("Logout")).toBeInTheDocument();
 
     const backdrop = container.querySelector(".dropdown-backdrop");
     expect(backdrop).not.toBeNull();
     await user.click(backdrop!);
 
-    expect(screen.queryByText("Sign out")).not.toBeInTheDocument();
+    expect(screen.queryByText("Logout")).not.toBeInTheDocument();
   });
 
   it("toggles the menu closed when options is clicked again", async () => {
@@ -85,10 +85,10 @@ describe("ChatHeader", () => {
     render(<ChatHeader currentUser={{ username: "alice" }} onLogout={vi.fn()} />);
 
     await user.click(screen.getByTitle("Options"));
-    expect(screen.getByText("Sign out")).toBeInTheDocument();
+    expect(screen.getByText("Logout")).toBeInTheDocument();
 
     await user.click(screen.getByTitle("Options"));
-    expect(screen.queryByText("Sign out")).not.toBeInTheDocument();
+    expect(screen.queryByText("Logout")).not.toBeInTheDocument();
   });
 
   it("hides the username entry when there is no current user", async () => {
@@ -98,6 +98,6 @@ describe("ChatHeader", () => {
     await user.click(screen.getByTitle("Options"));
 
     expect(screen.queryByText("alice")).not.toBeInTheDocument();
-    expect(screen.getByText("Sign out")).toBeInTheDocument();
+    expect(screen.getByText("Logout")).toBeInTheDocument();
   });
 });
