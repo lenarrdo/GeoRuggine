@@ -152,11 +152,11 @@ The shared state is represented by `AppState`. It contains:
 
 The server exposes versioned HTTP endpoints under `/api/v1`:
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| `POST` | `/api/v1/auth/register` | Register a new user |
-| `POST` | `/api/v1/auth/login` | Authenticate a user |
-| `GET` | `/api/v1/ws?token=<JWT>` | Open an authenticated WebSocket |
+| Method | Endpoint                 | Purpose                         |
+| ------ | ------------------------ | ------------------------------- |
+| `POST` | `/api/v1/auth/register`  | Register a new user             |
+| `POST` | `/api/v1/auth/login`     | Authenticate a user             |
+| `GET`  | `/api/v1/ws?token=<JWT>` | Open an authenticated WebSocket |
 
 HTTP requests and responses use JSON. HTTP is used for operations that follow a
 request-response pattern, while WebSocket is used for continuous bidirectional
@@ -297,11 +297,11 @@ local deployment.
 The database is initialized by the shared database module at server startup.
 Repositories isolate SQL operations by domain:
 
-| Repository | Responsibility |
-|---|---|
-| `UserRepository` | Users and authentication data |
-| `PositionRepository` | Journeys and received coordinates |
-| `TextMessageRepository` | Persisted text messages |
+| Repository              | Responsibility                    |
+| ----------------------- | --------------------------------- |
+| `UserRepository`        | Users and authentication data     |
+| `PositionRepository`    | Journeys and received coordinates |
+| `TextMessageRepository` | Persisted text messages           |
 
 The database file is configured through the server environment. The client
 never accesses this file directly.
@@ -363,21 +363,19 @@ georuggine-server/
 
 ### Main server modules
 
-| Module | Responsibility | Main files |
-|---|---|---|
-| `auth/` | Registration, login, password hashing and JWT validation | `auth_service.rs`, `user_repository.rs` |
-| `messages/position/` | Journeys, position storage and movement updates | `repository.rs`, `service.rs` |
-| `messages/text/` | Text-message storage | `repository.rs` |
-| `websocket/` | Authentication of connections and message transport | `clients.rs`, `mod.rs` |
-| `shared/` | Configuration, database, state and logging | `app_state.rs`, `database.rs`, `logger.rs` |
-| `tui/` | Server-side terminal administration | `mod.rs`, `chat_box/`, `user_list/` |
+| Module               | Responsibility                                           | Main files                                 |
+| -------------------- | -------------------------------------------------------- | ------------------------------------------ |
+| `auth/`              | Registration, login, password hashing and JWT validation | `auth_service.rs`, `user_repository.rs`    |
+| `messages/position/` | Journeys, position storage and movement updates          | `repository.rs`, `service.rs`              |
+| `messages/text/`     | Text-message storage                                     | `repository.rs`                            |
+| `websocket/`         | Authentication of connections and message transport      | `clients.rs`, `mod.rs`                     |
+| `shared/`            | Configuration, database, state and logging               | `app_state.rs`, `database.rs`, `logger.rs` |
+| `tui/`               | Server-side terminal administration                      | `mod.rs`, `chat_box/`, `user_list/`        |
 
 The server is a modular monolith: all modules run in one binary, but each
 domain has its own data-access and application responsibilities. This keeps
 deployment simple while preventing the WebSocket layer, authentication and
 database code from being mixed together.
-
-
 
 ### Client
 
@@ -632,13 +630,13 @@ georuggine-client/
 The Tauri backend is organized into independent modules with precise
 responsibilities:
 
-| Module | Responsibility | Main files |
-|---|---|---|
-| `auth/` | Input validation, registration, login and logout | `commands.rs`, `controller.rs`, `auth_service.rs` |
-| `messages/chatmessage/` | Sending text messages from the UI | `commands.rs`, `controller.rs`, `dto.rs` |
-| `messages/position/` | Position DTOs and periodic tracking | `command.rs`, `controller.rs`, `tracking.rs` |
-| `websocket/` | WebSocket connection, sending, reception and events | `mod.rs` |
-| `state.rs` | Session, channel and task ownership | `state.rs` |
+| Module                  | Responsibility                                      | Main files                                        |
+| ----------------------- | --------------------------------------------------- | ------------------------------------------------- |
+| `auth/`                 | Input validation, registration, login and logout    | `commands.rs`, `controller.rs`, `auth_service.rs` |
+| `messages/chatmessage/` | Sending text messages from the UI                   | `commands.rs`, `controller.rs`, `dto.rs`          |
+| `messages/position/`    | Position DTOs and periodic tracking                 | `command.rs`, `controller.rs`, `tracking.rs`      |
+| `websocket/`            | WebSocket connection, sending, reception and events | `mod.rs`                                          |
+| `state.rs`              | Session, channel and task ownership                 | `state.rs`                                        |
 
 ### Frontend
 
@@ -665,21 +663,21 @@ and
 
 The commands registered in `lib.rs` are:
 
-| Command | Purpose |
-|---|---|
-| `register` | Register a new account |
-| `login` | Authenticate and open the WebSocket |
-| `logout` | Close the connection and clear the session |
-| `get_current_user` | Read the current username |
-| `send_chat_message` | Send a text message |
-| `upload_coordinates` | Send position data |
+| Command              | Purpose                                    |
+| -------------------- | ------------------------------------------ |
+| `register`           | Register a new account                     |
+| `login`              | Authenticate and open the WebSocket        |
+| `logout`             | Close the connection and clear the session |
+| `get_current_user`   | Read the current username                  |
+| `send_chat_message`  | Send a text message                        |
+| `upload_coordinates` | Send position data                         |
 
 The events emitted from Rust to React are:
 
-| Event | Purpose |
-|---|---|
-| `chat-message-received` | Deliver a server message to the chat |
-| `ws-disconnected` | Notify React about an unexpected disconnection |
+| Event                   | Purpose                                        |
+| ----------------------- | ---------------------------------------------- |
+| `chat-message-received` | Deliver a server message to the chat           |
+| `ws-disconnected`       | Notify React about an unexpected disconnection |
 
 ## Testing
 
