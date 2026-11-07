@@ -1,13 +1,7 @@
-# ignore drawio backup files
 *.bkp
 
-# ignore database (for now)
 *.sqlite
 *.db
 
-# direnv
-.envrc
-.direnv/
-
-# log messages
 *.log
+*.pdf
