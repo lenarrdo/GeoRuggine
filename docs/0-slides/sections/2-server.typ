@@ -155,7 +155,7 @@ pub struct ConnectedClient {
             table(
               columns: 2,
               table.header([Client], [Server]),
-              [], [],
+              [6.5 MB], [3.9 MB],
             ),
           )
         ],
@@ -165,7 +165,7 @@ pub struct ConnectedClient {
             table(
               columns: 2,
               table.header([Client], [Server]),
-              [], [],
+              [4.8 MB], [3.1 MB],
             ),
           )
         ],
