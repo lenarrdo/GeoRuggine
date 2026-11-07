@@ -15,6 +15,26 @@
   ),
 )
 
+== Strutture Principali
+
+```rust
+pub struct Coordinates {
+    pub lat: f64,
+    pub lon: f64,
+    pub timestamp: DateTime<Utc>,
+}
+
+pub struct Journey {
+    _id: u32,
+    coordinates: Vec<Coordinates>,
+}
+
+pub struct TextMessage {
+    pub contents: String,
+    pub timestamp: DateTime<Utc>,
+}
+```
+
 == Autenticazione
 
 ```json
@@ -57,18 +77,61 @@ pub struct ConnectedClient {
 == Gestione del Movimento
 
 #list(
-  [`ConnectedClient.last_position` memorizza l'ultima posizione _diversa_ inviata dal client.],
-)
-```rust
-pub fn is_moving(&self, user_id: u32) -> bool {
-    let Some(last_position) = client.last_position.as_ref() else {
-        return false;
+  [
+    `ConnectedClient.last_position` memorizza l'ultima posizione _diversa_ inviata dal client.
+    ```rust
+    pub fn is_moving(&self, user_id: u32) -> bool {
+        let Some(last_position) = client.last_position.as_ref() else {
+            return false;
+        };
+
+        Utc::now().signed_duration_since(last_position.timestamp) < INACTIVE_THRESHOLD
+    }
+    ```
+  ],
+  [
+    In base al risultato, viene comunicato un evento all'interfaccia per riflettere il cambiamento.
+    ```rust
+    let event = if state.clients.is_moving(user_id) {
+        AppEvent::UserMoving(user_id)
+    } else {
+        AppEvent::UserStopped(user_id)
     };
+    ```
+  ],
+)
 
-    Utc::now().signed_duration_since(last_position.timestamp) < INACTIVE_THRESHOLD
-}
-```
+#pagebreak()
 
+#list(
+  [
+    Per calcolare le statistiche di movimento, è possibile specificare quali record recuperare.
+    ```rust
+    pub async fn get_positions(
+        &self,
+        user_id: u32,
+        time_frame: TimeFrame, // Today, ThisWeek, ThisMonth
+    ) -> Result<Vec<Journey>, sqlx::Error>;
+    ```
+  ],
+  [
+    Poi delle funzioni di servizio calcolano le statistiche solamente sulle journey recuperate.
+    ```rust
+    ///                                     time moving ---v         v--- time not moving
+    pub fn get_movement_stats(journeys: &[Journey]) -> (Duration, Duration);
+    pub fn get_average_speed(journeys: &[Journey]) -> Option<f64>;
+    pub fn get_total_distance(journeys: &[Journey]) -> f64;
+    ```
+  ],
+)
+
+== Terminal User Interface
+
+#grid(
+  columns: 2,
+  column-gutter: 10pt,
+  [#image("/figures/georuggine-tui.webp")], [#image("/figures/user-info.webp")],
+)
 
 == CPU Log e Dimensioni
 
@@ -81,7 +144,7 @@ pub fn is_moving(&self, user_id: u32) -> bool {
     ```
   ],
   [
-    Dimensioni eseguibile
+    Dimensioni degli eseguibili
     #align(center)[
       #grid(
         columns: 2,
