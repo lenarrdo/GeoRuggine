@@ -39,5 +39,10 @@ pub fn get_average_speed(journeys: &[Journey]) -> Option<f64> {
 
 /// Computes the total distance (in kilometers) covered over a set of journeys.
 pub fn get_total_distance(journeys: &[Journey]) -> f64 {
-    journeys.iter().map(|j| j.compute_total_distance()).sum()
+    let mut distance = 0f64;
+    for j in journeys {
+        distance += j.compute_total_distance();
+    }
+    distance
+    // journeys.iter().map(|j| j.compute_total_distance()).sum()
 }

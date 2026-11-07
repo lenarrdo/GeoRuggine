@@ -65,7 +65,7 @@ pub async fn handle_socket(socket: WebSocket, user_id: u32, state: Arc<AppState>
     let journey_id = pos_repo
         .create_new_journey(user_id)
         .await
-        .unwrap_or_default(); // this isn't ideal
+        .unwrap_or_default();
     state
         .clients
         .list

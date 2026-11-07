@@ -244,7 +244,7 @@ impl App {
                     let positions = PositionRepository::new(self.state.db.clone())
                         .get_positions(user.id, TimeFrame::Today)
                         .await
-                        .unwrap_or_default(); // improve handling
+                        .unwrap_or_default();
                     self.user_info_popup.update_movement_stats(&positions);
                     self.user_info_popup.user = user;
 
