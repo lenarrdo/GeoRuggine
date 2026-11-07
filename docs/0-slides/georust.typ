@@ -5,7 +5,7 @@
 #show: slides.with(
   title: "GeoRuggine",
   subtitle: "Sistema di geolocalizzazione per una flotta di veicoli",
-  date: "09/11/2026",
+  date: "10/11/2026",
   authors: ("Leonardo Miani", "Luca Robustelli"),
 
   ratio: 16 / 9,
@@ -14,5 +14,5 @@
   toc: false,
 )
 
-#include "/sections/1-client.typ"
-#include "/sections/2-server.typ"
+#include "sections/1-client.typ"
+#include "sections/2-server.typ"
