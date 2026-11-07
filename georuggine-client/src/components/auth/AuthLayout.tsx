@@ -25,7 +25,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
               <div className="auth-brand-icon-wrapper rounded-3 p-2">
                 <MapPin size={28} className="auth-pin-icon" />
               </div>
-              <h1 className="auth-brand-title mb-0">GeoRust</h1>
+              <h1 className="auth-brand-title mb-0">GeoRuggine</h1>
             </div>
             <p className="auth-brand-tagline mb-0 font-monospace">Track. Communicate. Analyze.</p>
           </div>
