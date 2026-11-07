@@ -3,17 +3,17 @@
 == Architettura del Client
 
 
-  - Applicazione desktop realizzata con *Tauri*.
-  - *React* gestisce l'interfaccia grafica.
-  - *Rust* gestisce logica, sessione e comunicazione col server.
+- Applicazione desktop realizzata con *Tauri*.
+- *React* gestisce l'interfaccia grafica.
+- *Rust* gestisce logica, sessione e comunicazione col server.
 
-  #align(center + horizon)[
-    #image("../images/TauriAppLogo.svg", height: 40%)
-  ]
+#align(center + horizon)[
+  #image("/figures/TauriAppLogo.svg", height: 40%)
+]
 
-  == Login/Registrazione
+== Login/Registrazione
 
-  - L’utente può registrarsi o effettuare il login.
+- L’utente può registrarsi o effettuare il login.
 - La registrazione porta alla schermata di login.
 - Dopo il login si accede alle funzionalità principali dell’applicazione.
 
@@ -22,12 +22,12 @@
   gutter: 1em,
   align: center,
 )[
-  #image("../../../georuggine-client/docs/images/login.png", width: 90%)
+  #image("/figures/login.webp", width: 90%)
 ][
-  #image("../../../georuggine-client/docs/images/register.png", width: 90%)
+  #image("/figures/register.webp", width: 90%)
 ]
 
-== Apertura Websocket
+== Apertura WebSocket
 
 - Dopo il login, il client tenta di stabilire la connessione WebSocket.
 - Una volta stabilita la connessione vengono creati due task:
@@ -58,28 +58,28 @@ pub struct AppState {
   gutter: 1em,
   align: horizon,
 )[
-#text(size: 8pt)[
-```rust
-pub enum ClientIncomingMessage {
-    Text(TextMessage),
-    Position(PositionUpdate),
-}
+  #text(size: 8pt)[
+    ```rust
+    pub enum ClientIncomingMessage {
+        Text(TextMessage),
+        Position(PositionUpdate),
+    }
 
-pub struct TextMessage {
-    pub contents: String,
-    pub timestamp: String,
-}
+    pub struct TextMessage {
+        pub contents: String,
+        pub timestamp: String,
+    }
 
-pub struct PositionUpdate {
-    pub lat: f64,
-    pub lon: f64,
-    pub timestamp: String,
-}
-```
-]
+    pub struct PositionUpdate {
+        pub lat: f64,
+        pub lon: f64,
+        pub timestamp: String,
+    }
+    ```
+  ]
 ][
   #grid[
-    #image("../../../georuggine-client/docs/images/chat.png", width: 100%)
+    #image("/figures/chat.webp", width: 100%)
   ]
 ]
 
@@ -94,35 +94,29 @@ pub struct PositionUpdate {
   gutter: 1em,
   align: center,
 )[
-  #image("../../../georuggine-client/docs/images/logout.png", width: 90%)
+  #image("/figures/logout.webp", width: 90%)
 ][
-  #image("../../../georuggine-client/docs/images/errorServer.png", width: 90%)
+  #image("/figures/errorServer.webp", width: 90%)
 ]
 
 #text(size: 8pt)[
-```rust
-pub fn disconnect_ws(&self) {
-    if let Ok(mut guard) = self.tracking_abort.lock() {
-        if let Some(handle) = guard.take() {
-            handle.abort();
-        }
-    }
+  ```rust
+  pub fn disconnect_ws(&self) {
+      if let Ok(mut guard) = self.tracking_abort.lock() && let Some(handle) = guard.take() {
+          handle.abort();
+      }
 
-    if let Ok(mut guard) = self.send_abort.lock() {
-        if let Some(handle) = guard.take() {
-            handle.abort();
-        }
-    }
+      if let Ok(mut guard) = self.send_abort.lock() && let Some(handle) = guard.take() {
+          handle.abort();
+      }
 
-    if let Ok(mut guard) = self.recv_abort.lock() {
-        if let Some(handle) = guard.take() {
-            handle.abort();
-        }
-    }
+      if let Ok(mut guard) = self.recv_abort.lock() && let Some(handle) = guard.take() {
+          handle.abort();
+      }
 
-    if let Ok(mut tx_guard) = self.ws_tx.lock() {
-        *tx_guard = None;
-    }
-}
-```
+      if let Ok(mut tx_guard) = self.ws_tx.lock() {
+          *tx_guard = None;
+      }
+  }
+  ```
 ]
