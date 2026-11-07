@@ -8,10 +8,12 @@
     columns: 2,
     table.header([Tabella], [Scopo]),
     [`users`], [Memorizza username e password degli utenti.],
-    [`journeys`], [Ogni nuova connessione corrisponde a una journey distinta.],
+    [`journeys`],
+    [Raggruppa in sessioni distinte le posizioni inviate a ogni nuova connessione.],
+
     [`positions`], [Memorizza le posizioni inviate durante una journey.],
     [`text_messages`],
-    [Memorizza i messaggi scambiati tra il server e l'utente.],
+    [Memorizza i messaggi scambiati tra il server e gli utenti.],
   ),
 )
 
@@ -78,7 +80,7 @@ pub struct ConnectedClient {
 
 #list(
   [
-    `ConnectedClient.last_position` memorizza l'ultima posizione _diversa_ inviata dal client.
+    `ConnectedClient.last_position` viene aggiornato unicamente quando il client invia una nuova posizione diversa dalla precedente.
     ```rust
     pub fn is_moving(&self, user_id: u32) -> bool {
         let Some(last_position) = client.last_position.as_ref() else {
@@ -105,7 +107,7 @@ pub struct ConnectedClient {
 
 #list(
   [
-    Per calcolare le statistiche di movimento, è possibile specificare quali record recuperare.
+    Per calcolare le statistiche di movimento, il sistema recupera anzitutto le journey pertinenti filtrate in base al periodo temporale richiesto:
     ```rust
     pub async fn get_positions(
         &self,
@@ -115,7 +117,7 @@ pub struct ConnectedClient {
     ```
   ],
   [
-    Poi delle funzioni di servizio calcolano le statistiche solamente sulle journey recuperate.
+    Successivamente, apposite funzioni di utilità elaborano le journey estratte per calcolare le metriche finali:
     ```rust
     ///                                     time moving ---v         v--- time not moving
     pub fn get_movement_stats(journeys: &[Journey]) -> (Duration, Duration);
