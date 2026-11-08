@@ -69,67 +69,69 @@ async fn pause_is_detected() {
     let dt = "2015-06-03T12:34:56Z".parse::<DateTime<Utc>>().unwrap();
 
     let mut journey = Journey::new(1, vec![]);
-    for i in 0..=5 {
-        journey.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(30 * i)));
-    }
 
-    // once the 6th position is received, the system sets the user's status as "not moving".
-    journey.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(30 * 6)));
-
-    // the 7th position will be counted as a break.
-    journey.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(30 * 7)));
-
-    let positions = vec![journey];
-    let (t_moving, t_not_moving) = get_movement_stats(&positions);
-
-    assert_eq!(
-        t_moving,
-        Duration::from(TimeDelta::try_seconds(180).unwrap())
-    );
-    assert_eq!(
-        t_not_moving,
-        Duration::from(TimeDelta::try_seconds(30).unwrap())
-    );
-}
-
-#[tokio::test]
-async fn movement_and_pause() {
-    let dt = "2015-06-03T12:34:56Z".parse::<DateTime<Utc>>().unwrap();
-
-    let mut journey = Journey::new(1, vec![]);
-
-    // user moves for 60s...
+    // starts moving
     journey.push(Coordinates::new(10.0, 10.0, dt));
-    journey.push(Coordinates::new(10.1, 10.0, dt + Duration::seconds(30)));
-    journey.push(Coordinates::new(10.1, 10.1, dt + Duration::seconds(60)));
-
-    // then they stand still (150s counted as movement)
-    for i in 3..8 {
-        journey.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(30 * i)));
-    }
-
-    // now 180s have passed since the first (10.0, 10.0), the user is marked as not moving
-    journey.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(30 * 8)));
-
-    // this is counted as a break
-    journey.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(30 * 9)));
-
-    // finally they start moving again (t_moving += 30)
-    journey.push(Coordinates::new(
-        10.0,
-        12.0,
-        dt + Duration::seconds(30 * 10),
-    ));
-
-    let positions = vec![journey];
-    let (t_moving, t_not_moving) = get_movement_stats(&positions);
-
     assert_eq!(
-        t_moving,
-        Duration::from(TimeDelta::try_seconds(60 + 180 + 30).unwrap())
+        (Duration::seconds(0), Duration::seconds(0)),
+        journey.get_movement_stats()
     );
+
+    // 30 seconds spent moving
+    journey.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(30)));
     assert_eq!(
-        t_not_moving,
-        Duration::from(TimeDelta::try_seconds(30).unwrap())
+        (Duration::seconds(30), Duration::seconds(0)),
+        journey.get_movement_stats()
+    );
+
+    // 60 seconds (1 minute spent moving)
+    journey.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(60)));
+    assert_eq!(
+        (Duration::seconds(60), Duration::seconds(0)),
+        journey.get_movement_stats()
+    );
+
+    // 90 seconds
+    journey.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(90)));
+    assert_eq!(
+        (Duration::seconds(90), Duration::seconds(0)),
+        journey.get_movement_stats()
+    );
+
+    // 120 seconds (2 minutes spent moving)
+    journey.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(120)));
+    assert_eq!(
+        (Duration::seconds(120), Duration::seconds(0)),
+        journey.get_movement_stats()
+    );
+
+    // 150 seconds
+    journey.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(150)));
+    assert_eq!(
+        (Duration::seconds(150), Duration::seconds(0)),
+        journey.get_movement_stats()
+    );
+
+    // 180 seconds (3 minutes spent moving. Now the user is marked as stopped)
+    journey.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(180)));
+    assert_eq!(
+        (Duration::seconds(180), Duration::seconds(0)),
+        journey.get_movement_stats()
+    );
+
+    // first 30 seconds spent not moving
+    journey.push(Coordinates::new(10.0, 10.0, dt + Duration::seconds(210)));
+    assert_eq!(
+        (Duration::seconds(180), Duration::seconds(30)),
+        journey.get_movement_stats()
+    );
+
+    // Now they have started moving again, so the state has gone from stopped -> moving.
+    // The thing is that these last 30 seconds are counted as not moving, since they
+    // were obtained when the user was in that state.
+    journey.push(Coordinates::new(11.0, 10.0, dt + Duration::seconds(240)));
+    assert_eq!(
+        (Duration::seconds(180), Duration::seconds(60)),
+        journey.get_movement_stats()
     );
 }
